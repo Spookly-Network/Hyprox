@@ -3,6 +3,7 @@
 Goals
 - Hybrid proxy: prefer redirect/referral but support full QUIC data-path when required.
 - Static pools: explicit backend sets with weights and hard limits.
+- Dynamic registration: allow orchestrator or agent to add/remove backends at runtime.
 - Seamless migration: in-session moves without client menu or reconnect.
 - Secure auth: terminate at proxy only if required; otherwise pass-through with signed handoff payloads.
 

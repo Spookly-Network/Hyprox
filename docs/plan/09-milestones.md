@@ -4,6 +4,7 @@ M1: Redirector proxy
 - QUIC listener and minimal handshake parsing.
 - Static pools and redirect decision.
 - Config load + validation.
+- Registry control API for dynamic backend add/remove.
 
 M2: Backend plugin (optional)
 - Referral payload signer.

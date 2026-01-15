@@ -10,6 +10,7 @@ Top-level keys
 - `migration`: settings for seamless handoff.
 - `observability`: logging and metrics.
 - `agent`: backend agent auth and allowlist.
+- `registry`: dynamic backend registration settings.
 
 Schema (draft)
 ```
@@ -106,6 +107,26 @@ agent:
   allowlist:
     - backendId: string
       address: string
+
+registry:
+  enabled: bool
+  listen: string
+  auth:
+    mode: mtls | hmac
+    clientCa: path
+    sharedKey: env:HYPROX_REGISTRY_HMAC | path
+    nonceBytes: int
+    clockSkewSeconds: int
+  allowlist:
+    - orchestratorId: string
+      address: string
+      allowedPools: [poolName]
+      allowedBackendIdPrefixes: [string]
+  defaults:
+    ttlSeconds: int
+    heartbeatGraceSeconds: int
+    drainTimeoutSeconds: int
+  allowedNetworks: [cidr]
 ```
 
 Example config
@@ -222,6 +243,26 @@ agent:
       address: 10.0.0.10
     - backendId: game-1
       address: 10.0.1.10
+
+registry:
+  enabled: true
+  listen: 127.0.0.1:9200
+  auth:
+    mode: mtls
+    clientCa: config/certs/orchestrator-ca.crt
+    sharedKey: env:HYPROX_REGISTRY_HMAC
+    nonceBytes: 16
+    clockSkewSeconds: 10
+  allowlist:
+    - orchestratorId: k8s-eu-1
+      address: 10.0.2.10
+      allowedPools: ["lobby", "game"]
+      allowedBackendIdPrefixes: ["lobby-", "game-"]
+  defaults:
+    ttlSeconds: 30
+    heartbeatGraceSeconds: 10
+    drainTimeoutSeconds: 60
+  allowedNetworks: ["10.0.0.0/8"]
 ```
 
 Notes

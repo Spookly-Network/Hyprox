@@ -7,6 +7,7 @@ Unit
 - Config parsing and validation.
 - Packet framing encode/decode compatibility.
 - Key scope enforcement and key rotation selection.
+- Registry entry validation (TTL, drain, allowlists).
 
 Integration
 - QUIC handshake to proxy (local client stub).
@@ -17,6 +18,9 @@ Integration
 - mTLS validation failures (unknown client CA, backend cert mismatch).
 - Agent auth (mTLS/HMAC) and allowlist enforcement.
 - Migration handoff with controlled backend timing.
+- Dynamic backend registration, heartbeat renewal, and automatic removal.
+- Registry HMAC replay protection and orchestrator pool scope enforcement.
+- Registry port allowlist enforcement and duplicate backend id rejection.
 
 Load
 - Simulate many concurrent sessions.

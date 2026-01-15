@@ -44,6 +44,7 @@ Constraints
 - If a migration ticket cannot be obtained or verified, migration for that pool is disabled.
 - Missing setup or world state packets can cause desync; use backend-provided state transfer where available.
 - Packet ordering across streams must be preserved during cutover.
+- Migration tickets are verified for signature, expiry, client uuid, and target backend id before use.
 
 Deliverables
 - Verified minimal packet set required for hot handoff (via trace).

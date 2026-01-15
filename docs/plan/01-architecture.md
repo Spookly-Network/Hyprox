@@ -14,11 +14,13 @@ Components
 3) control-plane (file-based config, optional service later)
 - Static pool definitions, weights, capacity.
 - Secrets for signing referral payloads (per backend or pool).
+- Dynamic registry API for runtime backend add/remove (embedded in proxy).
 
 Data paths
 - Redirect path: client -> proxy (handshake) -> backend; proxy exits data path.
 - Full proxy path: client <-> proxy <-> backend; proxy remains in data path.
 - Migration path: client stays connected to proxy; proxy creates backend B connection, switches forwarding when safe.
+- Registry path: orchestrator/agent -> proxy control API -> routing table update.
 
 Trust boundaries
 - Proxy is trusted to enforce routing and authenticate payloads.

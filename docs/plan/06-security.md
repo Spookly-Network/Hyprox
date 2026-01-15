@@ -26,6 +26,14 @@ Proxy auth strategy
 Agent and control-plane security
 - Agent -> proxy communication uses mTLS or shared HMAC token with nonce/timestamp.
 - Agent endpoints are allowlisted by address and backend id.
+- Agent updates are scoped to a single backend id and must match the agent certificate SAN or HMAC scope.
+- Control-plane registration uses mTLS with a pinned CA and per-orchestrator allowlist.
+- Registration requests are validated against allowed IP ranges or hostname allowlists to prevent SSRF.
+- For HMAC modes, require `nonce` + `timestamp` with bounded clock skew and replay cache.
+- Orchestrators are scoped to allowed pools and backend id prefixes; out-of-scope registrations are rejected.
+- Registry entries are only activated after a backend cert SAN matches the configured allowlist.
+- Registration payloads must pass allowed port checks; loopback or public IPs outside allowed networks are rejected.
+- Dynamic registry cannot override static backend ids; duplicates are rejected.
 
 Secrets management
 - Secrets are loaded from env or files with restricted permissions.

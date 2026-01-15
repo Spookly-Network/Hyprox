@@ -6,6 +6,7 @@ Metrics
 - Routing decisions: `hyprox_routes_total{pool,reason}`.
 - Migration: `hyprox_migration_total{result}`, `hyprox_migration_duration_ms`.
 - Errors: `hyprox_disconnects_total{reason}`, `hyprox_auth_failures_total`.
+- Registry: `hyprox_registry_events_total{action,result}`.
 
 Logging
 - Connection lifecycle with correlation id (connect, auth, setup, close).
@@ -13,6 +14,7 @@ Logging
 - Migration state transitions with durations and failure reasons.
 - Auth and referral verification failures (without leaking token contents).
 - Redact or omit token fields, referral payloads, and identity tokens in all logs.
+- Registry add/remove/drain events with backend id and source (orchestrator/agent).
 
 Packet tracing
 - Optional ring-buffer packet dump per session for debugging.
