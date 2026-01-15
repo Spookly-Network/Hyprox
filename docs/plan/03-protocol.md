@@ -27,6 +27,8 @@ Referral and redirect
 - `ClientReferral` (id 18): `hostTo?` (HostAddress), `data?` (<= 4096 bytes).
 - Referral connections surface on the next `Connect` via `referralData` and `referralSource`.
 - `PlayerSetupConnectEvent.referToServer(...)` uses `ClientReferral` during setup to redirect.
+- Proxy must validate referral signatures and target backend ids before using `referralSource` or `referralData` for routing.
+- Referral payloads are signed envelopes that include `keyId`, `issuedAt`, `ttl`, `nonce`, and `targetBackendId`.
 
 Setup and world entry (observed in `SetupPacketHandler`)
 - `WorldSettings` (id 20): world height + required assets (compressed).
@@ -45,3 +47,4 @@ Forwarding considerations
 - Redirect/referral path can avoid full packet decode for gameplay traffic.
 - Full proxy path must decode/encode at least the handshake/auth + setup packets listed above.
 - Any token- or host-bearing fields (`identityToken`, `authorizationGrant`, `serverAuthorizationGrant`, referral host/data) must be treated as sensitive and only rewritten with a clear policy.
+- Logs and packet traces must redact token fields and referral payloads.

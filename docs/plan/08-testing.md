@@ -6,6 +6,7 @@ Unit
 - Migration state machine.
 - Config parsing and validation.
 - Packet framing encode/decode compatibility.
+- Key scope enforcement and key rotation selection.
 
 Integration
 - QUIC handshake to proxy (local client stub).
@@ -13,6 +14,8 @@ Integration
 - Full proxy forwarding with packet decode/encode.
 - Authenticated flow (AuthGrant/AuthToken) and dev/password flow.
 - Referral signature verification and replay protection.
+- mTLS validation failures (unknown client CA, backend cert mismatch).
+- Agent auth (mTLS/HMAC) and allowlist enforcement.
 - Migration handoff with controlled backend timing.
 
 Load

@@ -19,7 +19,3 @@ Definitions
 - Redirect path: proxy accepts initial handshake and then instructs client to connect to a backend.
 - Referral path: backend server tells client to connect to another backend, with a signed payload.
 - Full proxy path: client connects to proxy; proxy opens backend connection and forwards packets.
-
-Open questions
-- Which packet types are required to support seamless migration without reconnect?
-- What is the authoritative session state required for a hot move between backends?

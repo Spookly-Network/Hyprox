@@ -6,12 +6,12 @@ Move a connected player between backends without client reconnect or menu return
 Requirements
 - Full proxy data path only (redirect/referral cannot be seamless).
 - Proxy must be allowed to authenticate to backends on behalf of the client.
-- Backend cooperation is strongly recommended for state transfer and consistency.
+- Migration requires backend cooperation and a short-lived migration ticket.
 
 State machine (full proxy)
 1) Idle (A): client <-> backend A forwarded normally.
 2) Prepare: select backend B, open QUIC connection with mTLS, send `Connect`.
-3) Auth: complete auth with B (reuse client tokens only if permitted).
+3) Auth: complete auth with B using client tokens plus a migration ticket from A.
 4) Sync: send or await setup state on B (world settings, server info).
 5) Freeze: stop client->A forwarding; buffer client->proxy packets.
 6) Cutover: switch forwarding to B when it is ready.
@@ -24,6 +24,7 @@ Session data to capture (initial list)
 - From auth flow: `accessToken`, `serverAuthorizationGrant`, `serverAccessToken`.
 - From setup: `SetClientId`, `ServerInfo`, `WorldSettings`, `ViewRadius`, `PlayerOptions`.
 - From world entry: `JoinWorld` (world UUID and flags).
+- From backend A: migration ticket (signed, short TTL, bound to client uuid and target backend id).
 
 Handoff sequencing (full proxy)
 - Open B connection and complete auth before freezing client traffic.
@@ -39,9 +40,9 @@ Fallbacks
 - If B setup/auth fails: resume A and clear buffers.
 - If cutover fails after freeze: attempt referral fallback or disconnect with reason.
 
-Risks
-- Reusing client tokens may not be allowed; validate server expectations.
-- Missing setup or world state packets can cause desync.
+Constraints
+- If a migration ticket cannot be obtained or verified, migration for that pool is disabled.
+- Missing setup or world state packets can cause desync; use backend-provided state transfer where available.
 - Packet ordering across streams must be preserved during cutover.
 
 Deliverables

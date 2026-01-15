@@ -9,6 +9,7 @@ Top-level keys
 - `routing`: static pools and rules.
 - `migration`: settings for seamless handoff.
 - `observability`: logging and metrics.
+- `agent`: backend agent auth and allowlist.
 
 Schema (draft)
 ```
@@ -23,17 +24,31 @@ proxy:
     alpn: [string]
     cert: path
     key: path
+    clientCa: path
+    backendCa: path
+    requireClientCert: bool
+    backendSanAllowlist: [string]
     mtu: int
   timeouts:
     handshakeMs: int
     idleMs: int
+  limits:
+    handshakesPerMinutePerIp: int
+    concurrentPerIp: int
 
 auth:
   mode: passthrough | terminate
   referral:
     signing:
       algorithm: hmac-sha256
-      key: env:HYPROX_REFERRAL_HMAC | path
+      activeKeyId: string
+      keys:
+        - keyId: string
+          key: env:HYPROX_REFERRAL_HMAC | path
+          scope: backend | pool | global
+          scopeId: string
+          validFrom: iso8601
+          validTo: iso8601
       ttlSeconds: int
       nonceBytes: int
     payloadMaxBytes: 4096
@@ -65,15 +80,32 @@ migration:
   prepareTimeoutMs: int
   cutoverTimeoutMs: int
   bufferMaxPackets: int
+  bufferGlobalMaxPackets: int
+  ticketRequired: bool
+  ticketMaxAgeSeconds: int
   allowPools: [poolName]
 
 observability:
   logging:
     level: trace | debug | info | warn | error
+    redactTokens: bool
+  tracing:
+    enabled: bool
+    allowlistPacketIds: [int]
+    memoryOnly: bool
   metrics:
     prometheus:
       enabled: bool
       listen: string
+
+agent:
+  auth:
+    mode: mtls | hmac
+    sharedKey: env:HYPROX_AGENT_HMAC | path
+    clientCa: path
+  allowlist:
+    - backendId: string
+      address: string
 ```
 
 Example config
@@ -86,20 +118,34 @@ proxy:
   defaultPath: redirect
   fullProxyPools: ["game"]
   quic:
-    alpn: ["hytale"]
+    alpn: ["hytale/1"]
     cert: config/certs/proxy.crt
     key: config/certs/proxy.key
+    clientCa: config/certs/hytale-client-ca.crt
+    backendCa: config/certs/backend-ca.crt
+    requireClientCert: true
+    backendSanAllowlist: ["backend-1.local", "backend-2.local"]
     mtu: 1350
   timeouts:
     handshakeMs: 10000
     idleMs: 30000
+  limits:
+    handshakesPerMinutePerIp: 60
+    concurrentPerIp: 4
 
 auth:
   mode: passthrough
   referral:
     signing:
       algorithm: hmac-sha256
-      key: env:HYPROX_REFERRAL_HMAC
+      activeKeyId: "k1"
+      keys:
+        - keyId: "k1"
+          key: env:HYPROX_REFERRAL_HMAC
+          scope: backend
+          scopeId: lobby-1
+          validFrom: 2025-01-01T00:00:00Z
+          validTo: 2025-12-31T23:59:59Z
       ttlSeconds: 30
       nonceBytes: 16
     payloadMaxBytes: 4096
@@ -148,17 +194,37 @@ migration:
   prepareTimeoutMs: 3000
   cutoverTimeoutMs: 1500
   bufferMaxPackets: 256
+  bufferGlobalMaxPackets: 8192
+  ticketRequired: true
+  ticketMaxAgeSeconds: 10
   allowPools: ["game"]
 
 observability:
   logging:
     level: info
+    redactTokens: true
+  tracing:
+    enabled: false
+    allowlistPacketIds: [0, 10, 18]
+    memoryOnly: true
   metrics:
     prometheus:
       enabled: true
       listen: 127.0.0.1:9100
+
+agent:
+  auth:
+    mode: mtls
+    clientCa: config/certs/backend-ca.crt
+    sharedKey: env:HYPROX_AGENT_HMAC
+  allowlist:
+    - backendId: lobby-1
+      address: 10.0.0.10
+    - backendId: game-1
+      address: 10.0.1.10
 ```
 
 Notes
 - Keep `auth.mode: passthrough` for maximum security unless the full proxy must terminate auth to perform a feature.
 - Referral payloads must be signed and validated by the target backend to prevent tampering.
+- Pin client and backend CAs; do not accept unauthenticated QUIC sessions.

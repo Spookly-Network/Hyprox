@@ -8,6 +8,8 @@ Routing decisions
 - Initial connect: choose pool by config rules (default lobby).
 - Transfer: use referral from backend plugin with signed payload.
 - Migration: proxy instructs internal handoff (full proxy path).
+- Referral routing only applies when signature, TTL, and target backend id are valid; otherwise ignore referral data.
+- Use the backend address from configuration; do not trust `hostTo` from unverified referral data.
 
 Health checks
 - Passive: connection failures, timeouts.

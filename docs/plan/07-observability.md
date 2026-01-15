@@ -12,8 +12,11 @@ Logging
 - Routing decisions with pool/backend id and reason.
 - Migration state transitions with durations and failure reasons.
 - Auth and referral verification failures (without leaking token contents).
+- Redact or omit token fields, referral payloads, and identity tokens in all logs.
 
 Packet tracing
 - Optional ring-buffer packet dump per session for debugging.
 - Disabled by default, protected by config flag.
 - Support sampling and size caps to avoid PII leakage and disk growth.
+- Only allowlisted packet ids may be traced; sensitive fields are scrubbed.
+- Trace data is memory-only unless a file path is explicitly configured.

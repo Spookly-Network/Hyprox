@@ -13,7 +13,7 @@ Components
 
 3) control-plane (file-based config, optional service later)
 - Static pool definitions, weights, capacity.
-- Secrets for signing referral payloads.
+- Secrets for signing referral payloads (per backend or pool).
 
 Data paths
 - Redirect path: client -> proxy (handshake) -> backend; proxy exits data path.
@@ -22,7 +22,9 @@ Data paths
 
 Trust boundaries
 - Proxy is trusted to enforce routing and authenticate payloads.
-- Backend plugin is trusted only for its own server context and shared signing secret.
+- Proxy validates client certificates against a pinned CA and validates backend certificates before forwarding.
+- Backend plugin is trusted only for its own server context and its scoped signing key.
+- Agent -> proxy communication is authenticated (mTLS or HMAC) and allowlisted by backend id.
 
 Failure modes
 - Backend down: proxy redirects to fallback pool.
