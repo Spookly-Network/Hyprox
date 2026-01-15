@@ -11,6 +11,9 @@ repositories {
 
 dependencies {
     compileOnly(files "libs/HytaleServer.jar")
+    compileOnly 'io.netty.incubator:netty-incubator-codec-native-quic:0.0.21.Final'
+
+
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
