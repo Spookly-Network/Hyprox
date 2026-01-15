@@ -18,6 +18,8 @@
 - Package naming: lower-case, e.g., `net.spookly.hyprox`.
 - Class naming: PascalCase (e.g., `Hyprox`, `ProxySession`).
 - Keep source files ASCII unless the file already uses Unicode.
+- Code must be **deterministic**. No random behavior without explicit seeding and reason.
+- Avoid hidden side effects; prefer pure functions where possible.
 
 ## Testing Guidelines
 - Framework: JUnit 5 (`org.junit.jupiter`).
@@ -33,3 +35,19 @@
 ## Security & Configuration Tips
 - Do not commit certificates, private keys, or HMAC secrets; use env vars and local config paths.
 - Validate CA bundles and allowlists before enabling dynamic registration or full-proxy auth features.
+
+## Documentation Guidelines
+- Add meaningful Javadocs
+- Keep docs in sync with the implementation
+- Add meaningful field descriptions in Javadocs
+
+## Agent rules: always read `.agents/`
+
+Before you make any change in this repository, you **must** read the entire `.agents/` directory.
+
+The files in `.agents/` are the **source of truth** for how you work in this repo:
+- follow them **exactly**
+- if there is a conflict between documents, **`.agents/` wins**
+- do not guess or invent missing rules, look them up in `.agents/`
+
+If you didn’t read `.agents/`, you are not ready to start coding.
