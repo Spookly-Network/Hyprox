@@ -1,0 +1,125 @@
+package net.spookly.hyprox.routing;
+
+import net.spookly.hyprox.config.HyproxConfig;
+import net.spookly.hyprox.registry.BackendRegistry;
+import net.spookly.hyprox.registry.RegisteredBackend;
+import org.junit.jupiter.api.Test;
+
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+class RoutingServiceTest {
+    @Test
+    void routesByRuleMatch() {
+        HyproxConfig config = baseConfig();
+        config.routing.rules = List.of(rule("editor", null, "edit"));
+        config.routing.pools.put("edit", pool("weighted", backend("edit-1")));
+
+        RoutingService service = new RoutingService(config, null);
+        RoutingResult result = service.route(new RoutingRequest("editor", null));
+
+        assertEquals("edit", result.pool());
+        assertNotNull(result.backend());
+        assertEquals("edit-1", result.backend().id());
+    }
+
+    @Test
+    void defaultsWhenNoRuleMatches() {
+        HyproxConfig config = baseConfig();
+        config.routing.rules = List.of(rule("editor", null, "edit"));
+        config.routing.pools.put("edit", pool("weighted", backend("edit-1")));
+
+        RoutingService service = new RoutingService(config, null);
+        RoutingResult result = service.route(new RoutingRequest("game", null));
+
+        assertEquals("lobby", result.pool());
+        assertNotNull(result.backend());
+        assertEquals("lobby-1", result.backend().id());
+    }
+
+    @Test
+    void roundRobinCycles() {
+        HyproxConfig config = baseConfig();
+        config.routing.pools.put("lobby", pool("round_robin", backend("lobby-1"), backend("lobby-2")));
+
+        RoutingService service = new RoutingService(config, null);
+        RoutingResult first = service.route(new RoutingRequest("game", null));
+        RoutingResult second = service.route(new RoutingRequest("game", null));
+        RoutingResult third = service.route(new RoutingRequest("game", null));
+
+        assertEquals("lobby-1", first.backend().id());
+        assertEquals("lobby-2", second.backend().id());
+        assertEquals("lobby-1", third.backend().id());
+    }
+
+    @Test
+    void drainingDynamicBackendsExcludedByDefault() {
+        HyproxConfig config = baseConfig();
+        BackendRegistry registry = BackendRegistry.fromConfig(config);
+        RoutingService service = new RoutingService(config, registry);
+
+        RegisteredBackend backend = new RegisteredBackend(
+                "dyn-1",
+                "lobby",
+                "10.0.0.50",
+                9000,
+                1,
+                10,
+                List.of("dynamic"),
+                "orch-1",
+                Instant.now(),
+                Instant.now().plusSeconds(30),
+                false
+        );
+        registry.register(backend);
+        registry.drain("dyn-1", "orch-1", 30);
+
+        List<BackendTarget> candidates = service.listBackends("lobby", false);
+        assertEquals(1, candidates.size());
+        assertEquals("lobby-1", candidates.get(0).id());
+    }
+
+    private HyproxConfig baseConfig() {
+        HyproxConfig config = new HyproxConfig();
+        config.routing = new HyproxConfig.RoutingConfig();
+        config.routing.defaultPool = "lobby";
+        config.routing.pools = new LinkedHashMap<>();
+        config.routing.pools.put("lobby", pool("round_robin", backend("lobby-1")));
+        return config;
+    }
+
+    private HyproxConfig.RuleConfig rule(String clientType, String referralSource, String pool) {
+        HyproxConfig.RuleConfig rule = new HyproxConfig.RuleConfig();
+        rule.pool = pool;
+        rule.match = new HyproxConfig.MatchConfig();
+        rule.match.clientType = clientType;
+        rule.match.referralSource = referralSource;
+        return rule;
+    }
+
+    private HyproxConfig.PoolConfig pool(String policy, HyproxConfig.BackendConfig... backends) {
+        HyproxConfig.PoolConfig pool = new HyproxConfig.PoolConfig();
+        pool.policy = policy;
+        pool.backends = new ArrayList<>();
+        for (HyproxConfig.BackendConfig backend : backends) {
+            pool.backends.add(backend);
+        }
+        return pool;
+    }
+
+    private HyproxConfig.BackendConfig backend(String id) {
+        HyproxConfig.BackendConfig backend = new HyproxConfig.BackendConfig();
+        backend.id = id;
+        backend.host = "10.0.0.1";
+        backend.port = 9000;
+        backend.weight = 1;
+        backend.maxPlayers = 150;
+        backend.tags = List.of("static");
+        return backend;
+    }
+}
