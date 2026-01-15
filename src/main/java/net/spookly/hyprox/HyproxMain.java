@@ -2,9 +2,12 @@ package net.spookly.hyprox;
 
 import net.spookly.hyprox.config.ConfigLoader;
 import net.spookly.hyprox.config.HyproxConfig;
+import net.spookly.hyprox.registry.BackendRegistry;
+import net.spookly.hyprox.registry.RegistryServer;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.concurrent.CountDownLatch;
 
 public final class HyproxMain {
     private static final String DEFAULT_CONFIG = "config/hyprox.yaml";
@@ -17,6 +20,28 @@ public final class HyproxMain {
         HyproxConfig config = ConfigLoader.load(configPath);
         System.out.println("Hyprox config loaded: mode=" + config.proxy.mode
                 + " listen=" + config.proxy.listen.host + ":" + config.proxy.listen.port);
+
+        RegistryServer registryServer = null;
+        if (config.registry != null && Boolean.TRUE.equals(config.registry.enabled)) {
+            BackendRegistry registry = BackendRegistry.fromConfig(config);
+            registryServer = new RegistryServer(config, registry);
+            registryServer.start();
+        }
+
+        CountDownLatch latch = new CountDownLatch(1);
+        RegistryServer finalRegistryServer = registryServer;
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            if (finalRegistryServer != null) {
+                finalRegistryServer.stop();
+            }
+            latch.countDown();
+        }));
+
+        try {
+            latch.await();
+        } catch (InterruptedException ignored) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     private static Path resolveConfigPath(String[] args) {

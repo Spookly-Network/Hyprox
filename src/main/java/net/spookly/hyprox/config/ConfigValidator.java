@@ -330,6 +330,13 @@ public final class ConfigValidator {
                 }
             }
         }
+        if (registry.defaults == null) {
+            errors.add("registry.defaults is required when registry.enabled is true");
+        } else {
+            requirePositive(errors, registry.defaults.ttlSeconds, "registry.defaults.ttlSeconds");
+            requirePositive(errors, registry.defaults.heartbeatGraceSeconds, "registry.defaults.heartbeatGraceSeconds");
+            requirePositive(errors, registry.defaults.drainTimeoutSeconds, "registry.defaults.drainTimeoutSeconds");
+        }
     }
 
     private static boolean usesFullProxy(HyproxConfig config) {
