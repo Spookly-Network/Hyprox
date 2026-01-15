@@ -6,6 +6,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Utility helpers for registry initialization.
+ */
 final class RegistryUtils {
     private RegistryUtils() {
     }

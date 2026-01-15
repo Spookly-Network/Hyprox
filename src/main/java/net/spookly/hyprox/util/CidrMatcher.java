@@ -5,6 +5,9 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Simple IPv4/IPv6 CIDR matcher used to gate registry access.
+ */
 public final class CidrMatcher {
     private final List<CidrBlock> blocks;
 
@@ -12,6 +15,9 @@ public final class CidrMatcher {
         this.blocks = blocks;
     }
 
+    /**
+     * Builds a matcher from CIDR strings.
+     */
     public static CidrMatcher from(List<String> cidrs) {
         List<CidrBlock> blocks = new ArrayList<>();
         if (cidrs != null) {
@@ -25,6 +31,9 @@ public final class CidrMatcher {
         return new CidrMatcher(blocks);
     }
 
+    /**
+     * Returns true when the address falls within any configured CIDR.
+     */
     public boolean isAllowed(InetAddress address) {
         if (address == null) {
             return false;
@@ -46,6 +55,9 @@ public final class CidrMatcher {
             this.prefix = prefix;
         }
 
+        /**
+         * Parse a CIDR string into a block with prefix.
+         */
         static CidrBlock parse(String cidr) {
             String[] parts = cidr.split("/");
             if (parts.length != 2) {

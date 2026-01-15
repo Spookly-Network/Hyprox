@@ -1,16 +1,25 @@
 package net.spookly.hyprox.util;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.experimental.Accessors;
+
 import java.net.InetSocketAddress;
 
+/**
+ * Parsed host/port tuple from a listen address string.
+ */
+@Getter
+@Accessors(fluent = true)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ListenAddress {
     private final String host;
     private final int port;
 
-    private ListenAddress(String host, int port) {
-        this.host = host;
-        this.port = port;
-    }
-
+    /**
+     * Parse a {@code host:port} listen address.
+     */
     public static ListenAddress parse(String raw) {
         if (raw == null || raw.trim().isEmpty()) {
             throw new IllegalArgumentException("listen address is required");
@@ -37,15 +46,10 @@ public final class ListenAddress {
         return new ListenAddress(host, port);
     }
 
+    /**
+     * Convert to a socket address for binding.
+     */
     public InetSocketAddress toSocketAddress() {
         return new InetSocketAddress(host, port);
-    }
-
-    public String host() {
-        return host;
-    }
-
-    public int port() {
-        return port;
     }
 }

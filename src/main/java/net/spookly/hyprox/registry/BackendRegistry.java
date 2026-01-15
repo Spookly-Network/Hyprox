@@ -14,6 +14,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * In-memory store for dynamic backend registrations with TTL and drain support.
+ */
 public final class BackendRegistry {
     private final Map<String, RegisteredBackend> backends = new ConcurrentHashMap<>();
     private final Set<String> staticBackendIds;
@@ -22,6 +25,9 @@ public final class BackendRegistry {
     private final int drainTimeoutSeconds;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
+    /**
+     * Create a registry with explicit defaults.
+     */
     public BackendRegistry(Set<String> staticBackendIds, int defaultTtlSeconds, int heartbeatGraceSeconds, int drainTimeoutSeconds) {
         this.staticBackendIds = staticBackendIds;
         this.defaultTtlSeconds = defaultTtlSeconds;
@@ -29,6 +35,9 @@ public final class BackendRegistry {
         this.drainTimeoutSeconds = drainTimeoutSeconds;
     }
 
+    /**
+     * Build a registry with defaults extracted from config.
+     */
     public static BackendRegistry fromConfig(HyproxConfig config) {
         Set<String> staticIds = RegistryUtils.collectStaticBackendIds(config);
         int ttlSeconds = 30;
@@ -48,14 +57,23 @@ public final class BackendRegistry {
         return new BackendRegistry(staticIds, ttlSeconds, graceSeconds, drainSeconds);
     }
 
+    /**
+     * Start background cleanup of expired entries.
+     */
     public void start() {
         scheduler.scheduleAtFixedRate(this::purgeExpired, 1, 1, TimeUnit.SECONDS);
     }
 
+    /**
+     * Stop background cleanup.
+     */
     public void stop() {
         scheduler.shutdownNow();
     }
 
+    /**
+     * Register or refresh a backend entry.
+     */
     public RegisteredBackend register(@NonNull RegisteredBackend backend, Integer ttlSecondsOverride) {
         if (staticBackendIds.contains(backend.id())) {
             throw new IllegalArgumentException("backend id conflicts with static backend: " + backend.id());
@@ -94,6 +112,9 @@ public final class BackendRegistry {
         return register(backend, null);
     }
 
+    /**
+     * Update the heartbeat for a registered backend.
+     */
     public RegisteredBackend heartbeat(@NonNull String backendId, @NonNull String orchestratorId, Integer ttlSecondsOverride) {
         RegisteredBackend backend = backends.get(backendId);
         if (backend == null) {
@@ -111,6 +132,9 @@ public final class BackendRegistry {
         return backend;
     }
 
+    /**
+     * Mark a backend as draining and extend its expiry window.
+     */
     public RegisteredBackend drain(@NonNull String backendId, @NonNull String orchestratorId, Integer drainSecondsOverride) {
         RegisteredBackend backend = backends.get(backendId);
         if (backend == null) {
@@ -130,6 +154,9 @@ public final class BackendRegistry {
         return backend;
     }
 
+    /**
+     * List all registered backends, optionally filtered by pool.
+     */
     public List<RegisteredBackend> list(String pool) {
         if (pool == null || pool.trim().isEmpty()) {
             return new ArrayList<>(backends.values());
@@ -143,6 +170,9 @@ public final class BackendRegistry {
         return filtered;
     }
 
+    /**
+     * Total dynamic backend count.
+     */
     public int size() {
         return backends.size();
     }
@@ -166,6 +196,9 @@ public final class BackendRegistry {
         return drainTimeoutSeconds;
     }
 
+    /**
+     * Grace window for heartbeat expiry.
+     */
     public int heartbeatGraceSeconds() {
         return heartbeatGraceSeconds;
     }

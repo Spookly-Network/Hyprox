@@ -16,6 +16,9 @@ public final class ConfigLoader {
     private ConfigLoader() {
     }
 
+    /**
+     * Load and validate the Hyprox YAML configuration.
+     */
     public static HyproxConfig load(Path path) {
         if (path == null) {
             throw new ConfigException("Config path is required");

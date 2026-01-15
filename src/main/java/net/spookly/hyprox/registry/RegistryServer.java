@@ -24,6 +24,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Executors;
 
+/**
+ * HTTP control plane for dynamic backend registration.
+ */
 public final class RegistryServer {
     private static final ObjectMapper MAPPER = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
@@ -58,12 +61,18 @@ public final class RegistryServer {
         this.nonceCache = new NonceCache(nonceTtl);
     }
 
+    /**
+     * Start the registry listener and cleanup loop.
+     */
     public void start() {
         registry.start();
         server.start();
         System.out.println("Registry listening on " + server.getAddress().getHostString() + ":" + server.getAddress().getPort());
     }
 
+    /**
+     * Stop the registry listener and cleanup loop.
+     */
     public void stop() {
         server.stop(0);
         registry.stop();
@@ -98,15 +107,6 @@ public final class RegistryServer {
                 throw new IllegalArgumentException("request body required");
             }
             return MAPPER.readValue(payload, type);
-        }
-
-        protected void writeResponse(HttpExchange exchange, int status, RegistryResponse response) throws IOException {
-            byte[] payload = MAPPER.writeValueAsBytes(response);
-            exchange.getResponseHeaders().add("Content-Type", "application/json");
-            exchange.sendResponseHeaders(status, payload.length);
-            try (OutputStream output = exchange.getResponseBody()) {
-                output.write(payload);
-            }
         }
 
         protected byte[] readBodyBytes(HttpExchange exchange) throws IOException {
@@ -213,6 +213,15 @@ public final class RegistryServer {
             data.put("count", results.size());
             data.put("backends", toView(results));
             writeResponse(exchange, 200, RegistryResponse.ok("ok", data));
+        }
+    }
+
+    private void writeResponse(HttpExchange exchange, int status, RegistryResponse response) throws IOException {
+        byte[] payload = MAPPER.writeValueAsBytes(response);
+        exchange.getResponseHeaders().add("Content-Type", "application/json");
+        exchange.sendResponseHeaders(status, payload.length);
+        try (OutputStream output = exchange.getResponseBody()) {
+            output.write(payload);
         }
     }
 

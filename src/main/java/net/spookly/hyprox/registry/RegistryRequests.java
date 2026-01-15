@@ -2,7 +2,13 @@ package net.spookly.hyprox.registry;
 
 import java.util.List;
 
+/**
+ * Request payloads for registry API endpoints.
+ */
 public final class RegistryRequests {
+    /**
+     * Register a new backend from an orchestrator.
+     */
     public static final class RegisterRequest {
         public String orchestratorId;
         public String pool;
@@ -15,12 +21,18 @@ public final class RegistryRequests {
         public Integer ttlSeconds;
     }
 
+    /**
+     * Heartbeat payload for an existing backend.
+     */
     public static final class HeartbeatRequest {
         public String orchestratorId;
         public String backendId;
         public Integer ttlSeconds;
     }
 
+    /**
+     * Drain request for a backend.
+     */
     public static final class DrainRequest {
         public String orchestratorId;
         public String backendId;

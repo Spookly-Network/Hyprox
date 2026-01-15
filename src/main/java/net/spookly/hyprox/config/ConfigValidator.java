@@ -10,6 +10,9 @@ public final class ConfigValidator {
     private ConfigValidator() {
     }
 
+    /**
+     * Validate configuration, throwing ConfigException on any violations.
+     */
     public static void validate(HyproxConfig config) {
         List<String> errors = new ArrayList<>();
         if (config == null) {

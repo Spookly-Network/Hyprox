@@ -9,12 +9,18 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.CountDownLatch;
 
+/**
+ * Standalone entry point for the Hyprox proxy process.
+ */
 public final class HyproxMain {
     private static final String DEFAULT_CONFIG = "config/hyprox.yaml";
 
     private HyproxMain() {
     }
 
+    /**
+     * Boot the proxy process and optional registry service.
+     */
     public static void main(String[] args) {
         Path configPath = resolveConfigPath(args);
         HyproxConfig config = ConfigLoader.load(configPath);

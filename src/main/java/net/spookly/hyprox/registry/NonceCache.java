@@ -4,14 +4,23 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * In-memory replay cache for HMAC nonces.
+ */
 public final class NonceCache {
     private final Map<String, Instant> seen = new ConcurrentHashMap<>();
     private final int ttlSeconds;
 
+    /**
+     * @param ttlSeconds retention window for seen nonces.
+     */
     public NonceCache(int ttlSeconds) {
         this.ttlSeconds = ttlSeconds;
     }
 
+    /**
+     * Register a nonce key if unseen; returns false when already used.
+     */
     public boolean register(String key, Instant timestamp) {
         purge(timestamp);
         return seen.putIfAbsent(key, timestamp) == null;

@@ -1,5 +1,7 @@
 package net.spookly.hyprox.registry;
 
+import lombok.AllArgsConstructor;
+
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
@@ -7,12 +9,18 @@ import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.Base64;
 
+/**
+ * HMAC-based request authentication for the registry control plane.
+ */
 public final class HmacAuth {
     private static final String HMAC_ALGORITHM = "HmacSHA256";
 
     private HmacAuth() {
     }
 
+    /**
+     * Verify request headers, timestamp skew, replay, and signature.
+     */
     public static AuthResult verify(RequestAuthData data,
                                     String sharedKey,
                                     int nonceBytes,
@@ -86,6 +94,7 @@ public final class HmacAuth {
         return MessageDigest.isEqual(leftBytes, rightBytes);
     }
 
+    @AllArgsConstructor
     public static final class RequestAuthData {
         public final String method;
         public final String path;
@@ -94,32 +103,12 @@ public final class HmacAuth {
         public final String signature;
         public final String orchestratorId;
         public final byte[] body;
-
-        public RequestAuthData(String method,
-                               String path,
-                               Long timestampSeconds,
-                               String nonce,
-                               String signature,
-                               String orchestratorId,
-                               byte[] body) {
-            this.method = method;
-            this.path = path;
-            this.timestampSeconds = timestampSeconds;
-            this.nonce = nonce;
-            this.signature = signature;
-            this.orchestratorId = orchestratorId;
-            this.body = body;
-        }
     }
 
+    @AllArgsConstructor
     public static final class AuthResult {
         public final boolean ok;
         public final String message;
-
-        private AuthResult(boolean ok, String message) {
-            this.ok = ok;
-            this.message = message;
-        }
 
         public static AuthResult ok() {
             return new AuthResult(true, null);
