@@ -111,6 +111,12 @@ agent:
 registry:
   enabled: bool
   listen: string
+  maxRequestBytes: int
+  maxListResults: int
+  rateLimitPerMinute: int
+  allowedPorts: [int]
+  allowLoopback: bool
+  allowPublicAddresses: bool
   auth:
     mode: mtls | hmac
     clientCa: path
@@ -247,6 +253,12 @@ agent:
 registry:
   enabled: true
   listen: 127.0.0.1:9200
+  maxRequestBytes: 65536
+  maxListResults: 200
+  rateLimitPerMinute: 120
+  allowedPorts: [20001, 20002]
+  allowLoopback: false
+  allowPublicAddresses: false
   auth:
     mode: mtls
     clientCa: config/certs/orchestrator-ca.crt

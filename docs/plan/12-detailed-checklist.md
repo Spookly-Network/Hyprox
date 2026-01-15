@@ -27,9 +27,9 @@
 
 ## Dynamic registry
 - [ ] Enforce backend cert SAN allowlist on registration activation.
-- [ ] Add explicit port allowlist and reject loopback/public addresses.
-- [ ] Add request size limits and JSON parsing guards.
-- [ ] Add list endpoint filters and pagination if needed.
+- [x] Add explicit port allowlist and reject loopback/public addresses.
+- [x] Add request size limits and JSON parsing guards.
+- [x] Add list endpoint filters and pagination if needed.
 - [ ] Emit registry audit events (add, heartbeat, drain, expire).
 
 ## Full proxy data path
@@ -66,8 +66,8 @@
 ## Security hardening
 - [ ] Add TLS/QUIC cipher suite configuration and defaults.
 - [ ] Enforce nonce replay protection for registry and referral payloads.
-- [ ] Add request rate limits on registry endpoints.
-- [ ] Add allowlist checks for registry source IPs and orchestrator IDs.
+- [x] Add request rate limits on registry endpoints.
+- [x] Add allowlist checks for registry source IPs and orchestrator IDs.
 
 ## Testing
 - [ ] Unit tests for routing, selection, referral signing/verification.

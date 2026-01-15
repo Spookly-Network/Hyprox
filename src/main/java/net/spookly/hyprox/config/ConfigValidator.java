@@ -291,6 +291,22 @@ public final class ConfigValidator {
         if (registry.allowedNetworks == null || registry.allowedNetworks.isEmpty()) {
             errors.add("registry.allowedNetworks must include at least one CIDR");
         }
+        if (registry.maxRequestBytes != null && registry.maxRequestBytes <= 0) {
+            errors.add("registry.maxRequestBytes must be greater than 0");
+        }
+        if (registry.maxListResults != null && registry.maxListResults <= 0) {
+            errors.add("registry.maxListResults must be greater than 0");
+        }
+        if (registry.rateLimitPerMinute != null && registry.rateLimitPerMinute <= 0) {
+            errors.add("registry.rateLimitPerMinute must be greater than 0");
+        }
+        if (registry.allowedPorts == null || registry.allowedPorts.isEmpty()) {
+            errors.add("registry.allowedPorts must include at least one port");
+        } else {
+            for (Integer port : registry.allowedPorts) {
+                requirePort(errors, port, "registry.allowedPorts");
+            }
+        }
         if (registry.allowlist == null || registry.allowlist.isEmpty()) {
             errors.add("registry.allowlist must include at least one orchestrator");
         }

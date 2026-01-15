@@ -168,6 +168,12 @@ public class HyproxConfig {
     public static class RegistryConfig {
         public Boolean enabled;
         public String listen;
+        public Integer maxRequestBytes;
+        public Integer maxListResults;
+        public Integer rateLimitPerMinute;
+        public List<Integer> allowedPorts;
+        public Boolean allowLoopback;
+        public Boolean allowPublicAddresses;
         public RegistryAuthConfig auth;
         public List<RegistryAllowlistEntry> allowlist;
         public RegistryDefaults defaults;
