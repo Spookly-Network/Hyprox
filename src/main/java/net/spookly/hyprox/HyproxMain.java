@@ -2,8 +2,12 @@ package net.spookly.hyprox;
 
 import net.spookly.hyprox.config.ConfigLoader;
 import net.spookly.hyprox.config.HyproxConfig;
+import net.spookly.hyprox.proxy.ProxyServer;
 import net.spookly.hyprox.registry.BackendRegistry;
 import net.spookly.hyprox.registry.RegistryServer;
+import net.spookly.hyprox.routing.PathSelector;
+import net.spookly.hyprox.routing.RoutingPlanner;
+import net.spookly.hyprox.routing.RoutingService;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -27,18 +31,27 @@ public final class HyproxMain {
         System.out.println("Hyprox config loaded: mode=" + config.proxy.mode
                 + " listen=" + config.proxy.listen.host + ":" + config.proxy.listen.port);
 
+        BackendRegistry registry = BackendRegistry.fromConfig(config);
+        RoutingService routingService = new RoutingService(config, registry);
+        RoutingPlanner routingPlanner = new RoutingPlanner(routingService, new PathSelector(config));
+        ProxyServer proxyServer = new ProxyServer(config, routingPlanner);
+        proxyServer.start();
+
         RegistryServer registryServer = null;
         if (config.registry != null && Boolean.TRUE.equals(config.registry.enabled)) {
-            BackendRegistry registry = BackendRegistry.fromConfig(config);
             registryServer = new RegistryServer(config, registry);
             registryServer.start();
         }
 
         CountDownLatch latch = new CountDownLatch(1);
         RegistryServer finalRegistryServer = registryServer;
+        ProxyServer finalProxyServer = proxyServer;
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             if (finalRegistryServer != null) {
                 finalRegistryServer.stop();
+            }
+            if (finalProxyServer != null) {
+                finalProxyServer.stop();
             }
             latch.countDown();
         }));
