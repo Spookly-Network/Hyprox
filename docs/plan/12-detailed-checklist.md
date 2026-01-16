@@ -26,11 +26,11 @@
 - [ ] Add config for key rotation and overlapping validity.
 
 ## Dynamic registry
-- [ ] Enforce backend cert SAN allowlist on registration activation.
+- [x] Enforce backend cert SAN allowlist on registration activation.
 - [x] Add explicit port allowlist and reject loopback/public addresses.
 - [x] Add request size limits and JSON parsing guards.
 - [x] Add list endpoint filters and pagination if needed.
-- [ ] Emit registry audit events (add, heartbeat, drain, expire).
+- [x] Emit registry audit events (add, heartbeat, drain, expire).
 
 ## Full proxy data path
 - [ ] Add backend QUIC client connector with mTLS and CA pinning.
@@ -82,3 +82,4 @@
 - [ ] Document registry usage for orchestrators (examples + curl).
 - [ ] Add troubleshooting guide for common disconnects and TLS errors.
 - [ ] Add release checklist and versioning notes.
+  codex resume 019bc170-796d-7253-9303-c53f5208ca27
