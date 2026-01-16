@@ -1,6 +1,8 @@
 package net.spookly.hyprox;
 
 import net.spookly.hyprox.config.ConfigLoader;
+import net.spookly.hyprox.config.ConfigPrinter;
+import net.spookly.hyprox.config.ConfigWarnings;
 import net.spookly.hyprox.config.HyproxConfig;
 import net.spookly.hyprox.proxy.ProxyServer;
 import net.spookly.hyprox.registry.BackendRegistry;
@@ -28,8 +30,18 @@ public final class HyproxMain {
      * Boot the proxy process and optional registry service.
      */
     public static void main(String[] args) {
-        Path configPath = resolveConfigPath(args);
+        CliOptions options = parseArgs(args);
+        Path configPath = options.configPath;
         HyproxConfig config = ConfigLoader.load(configPath);
+        emitWarnings(config, configPath);
+        if (options.printEffectiveConfig) {
+            System.out.println(ConfigPrinter.toYaml(config));
+            return;
+        }
+        if (options.dryRun) {
+            System.out.println("Config OK (--dry-run).");
+            return;
+        }
         System.out.println("Hyprox config loaded: mode=" + config.proxy.mode
                 + " listen=" + config.proxy.listen.host + ":" + config.proxy.listen.port);
 
@@ -69,18 +81,38 @@ public final class HyproxMain {
         }
     }
 
-    private static Path resolveConfigPath(String[] args) {
+    private static CliOptions parseArgs(String[] args) {
+        Path configPath = Paths.get(DEFAULT_CONFIG);
+        boolean dryRun = false;
+        boolean printEffectiveConfig = false;
         if (args == null) {
-            return Paths.get(DEFAULT_CONFIG);
+            return new CliOptions(configPath, dryRun, printEffectiveConfig);
         }
         for (int i = 0; i < args.length; i++) {
             String arg = args[i];
             if ("--config".equals(arg) || "-c".equals(arg)) {
                 if (i + 1 < args.length) {
-                    return Paths.get(args[i + 1]);
+                    configPath = Paths.get(args[++i]);
+                    continue;
                 }
             }
+            if ("--dry-run".equals(arg)) {
+                dryRun = true;
+                continue;
+            }
+            if ("--print-effective-config".equals(arg)) {
+                printEffectiveConfig = true;
+            }
         }
-        return Paths.get(DEFAULT_CONFIG);
+        return new CliOptions(configPath, dryRun, printEffectiveConfig);
+    }
+
+    private static void emitWarnings(HyproxConfig config, Path configPath) {
+        for (String warning : ConfigWarnings.collect(config, configPath)) {
+            System.err.println("Config warning: " + warning);
+        }
+    }
+
+    private record CliOptions(Path configPath, boolean dryRun, boolean printEffectiveConfig) {
     }
 }

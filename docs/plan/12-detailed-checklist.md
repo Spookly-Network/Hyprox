@@ -1,10 +1,10 @@
 # Detailed implementation checklist
 
 ## Foundations
-- [ ] Confirm config schema matches implementation and add missing fields to `HyproxConfig`.
-- [ ] Add config examples for `redirect`, `full`, and `hybrid` modes.
-- [ ] Validate file permissions for key/cert inputs (warn if world-readable).
-- [ ] Add CLI flags: `--config`, `--dry-run`, `--print-effective-config`.
+- [x] Confirm config schema matches implementation and add missing fields to `HyproxConfig`.
+- [x] Add config examples for `redirect`, `full`, and `hybrid` modes.
+- [x] Validate file permissions for key/cert inputs (warn if world-readable).
+- [x] Add CLI flags: `--config`, `--dry-run`, `--print-effective-config`.
 
 ## QUIC listener and handshake
 - [ ] Complete QUIC server settings (idle timeout, stream limits, MTU).
@@ -82,4 +82,3 @@
 - [ ] Document registry usage for orchestrators (examples + curl).
 - [ ] Add troubleshooting guide for common disconnects and TLS errors.
 - [ ] Add release checklist and versioning notes.
-  codex resume 019bc170-796d-7253-9303-c53f5208ca27

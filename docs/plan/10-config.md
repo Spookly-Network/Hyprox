@@ -135,7 +135,7 @@ registry:
   allowedNetworks: [cidr]
 ```
 
-Example config
+Example config (hybrid)
 ```
 proxy:
   listen:
@@ -275,6 +275,56 @@ registry:
     heartbeatGraceSeconds: 10
     drainTimeoutSeconds: 60
   allowedNetworks: ["10.0.0.0/8"]
+```
+
+Example config (redirect-only)
+```
+proxy:
+  listen:
+    host: 0.0.0.0
+    port: 20000
+  mode: redirect
+  defaultPath: redirect
+  quic:
+    alpn: ["hytale/1"]
+    cert: config/certs/proxy.crt
+    key: config/certs/proxy.key
+    clientCa: config/certs/hytale-client-ca.crt
+    requireClientCert: true
+  timeouts:
+    handshakeMs: 8000
+    idleMs: 20000
+  limits:
+    handshakesPerMinutePerIp: 60
+    concurrentPerIp: 4
+
+# auth, routing, observability, and registry sections match the hybrid example.
+```
+
+Example config (full proxy only)
+```
+proxy:
+  listen:
+    host: 0.0.0.0
+    port: 20000
+  mode: full
+  defaultPath: full
+  quic:
+    alpn: ["hytale/1"]
+    cert: config/certs/proxy.crt
+    key: config/certs/proxy.key
+    clientCa: config/certs/hytale-client-ca.crt
+    backendCa: config/certs/backend-ca.crt
+    requireClientCert: true
+    backendSanAllowlist: ["backend-1.local", "backend-2.local"]
+  timeouts:
+    handshakeMs: 10000
+    idleMs: 30000
+  limits:
+    handshakesPerMinutePerIp: 60
+    concurrentPerIp: 4
+
+# auth, routing, migration, observability, and registry sections match the hybrid example.
 ```
 
 Notes
