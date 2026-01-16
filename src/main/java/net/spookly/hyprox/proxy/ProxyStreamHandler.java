@@ -10,6 +10,7 @@ import com.hypixel.hytale.protocol.packets.connection.Disconnect;
 import com.hypixel.hytale.protocol.packets.connection.DisconnectType;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.timeout.ReadTimeoutException;
 import net.spookly.hyprox.config.HyproxConfig;
 import net.spookly.hyprox.routing.BackendTarget;
 import net.spookly.hyprox.routing.DataPath;
@@ -17,6 +18,7 @@ import net.spookly.hyprox.routing.RoutingDecision;
 import net.spookly.hyprox.routing.RoutingPlanner;
 import net.spookly.hyprox.routing.RoutingRequest;
 
+import java.net.InetSocketAddress;
 import java.util.Locale;
 import java.util.Objects;
 
@@ -25,11 +27,15 @@ import java.util.Objects;
  */
 public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet> {
     private final RoutingPlanner routingPlanner;
+    private final ProxySessionLimiter sessionLimiter;
     private boolean handled;
+    private boolean sessionTracked;
+    private String remoteAddress;
 
-    public ProxyStreamHandler(HyproxConfig config, RoutingPlanner routingPlanner) {
+    public ProxyStreamHandler(HyproxConfig config, RoutingPlanner routingPlanner, ProxySessionLimiter sessionLimiter) {
         Objects.requireNonNull(config, "config");
         this.routingPlanner = Objects.requireNonNull(routingPlanner, "routingPlanner");
+        this.sessionLimiter = Objects.requireNonNull(sessionLimiter, "sessionLimiter");
     }
 
     @Override
@@ -42,6 +48,11 @@ public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet
             return;
         }
         handled = true;
+        clearHandshakeTimeout(ctx);
+        if (remoteAddress != null && !sessionLimiter.tryAcquireHandshake(remoteAddress)) {
+            sendDisconnect(ctx, "rate limited", DisconnectType.Disconnect);
+            return;
+        }
         Connect connect = (Connect) msg;
         RoutingDecision decision = routingPlanner.decide(toRequest(connect));
         BackendTarget backend = decision.backend();
@@ -59,7 +70,30 @@ public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        if (cause instanceof ReadTimeoutException) {
+            sendDisconnect(ctx, "handshake timeout", DisconnectType.Disconnect);
+            return;
+        }
         ProtocolUtil.closeApplicationConnection(ctx.channel());
+    }
+
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) {
+        remoteAddress = resolveRemoteAddress(ctx);
+        if (remoteAddress != null && !sessionLimiter.tryOpenSession(remoteAddress)) {
+            sendDisconnect(ctx, "too many sessions", DisconnectType.Disconnect);
+            return;
+        }
+        sessionTracked = remoteAddress != null;
+        ctx.fireChannelActive();
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) {
+        if (sessionTracked) {
+            sessionLimiter.releaseSession(remoteAddress);
+        }
+        ctx.fireChannelInactive();
     }
 
     private RoutingRequest toRequest(Connect connect) {
@@ -95,5 +129,22 @@ public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet
     private void sendDisconnect(ChannelHandlerContext ctx, String reason, DisconnectType type) {
         Disconnect disconnect = new Disconnect(reason, type);
         ctx.writeAndFlush(disconnect).addListener(ProtocolUtil.CLOSE_ON_COMPLETE);
+    }
+
+    private String resolveRemoteAddress(ChannelHandlerContext ctx) {
+        if (ctx.channel().remoteAddress() instanceof InetSocketAddress) {
+            InetSocketAddress address = (InetSocketAddress) ctx.channel().remoteAddress();
+            if (address.getAddress() != null) {
+                return address.getAddress().getHostAddress();
+            }
+            return address.getHostString();
+        }
+        return null;
+    }
+
+    private void clearHandshakeTimeout(ChannelHandlerContext ctx) {
+        if (ctx.pipeline().get("handshakeTimeout") != null) {
+            ctx.pipeline().remove("handshakeTimeout");
+        }
     }
 }

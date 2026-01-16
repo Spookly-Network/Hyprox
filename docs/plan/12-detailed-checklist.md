@@ -7,10 +7,10 @@
 - [x] Add CLI flags: `--config`, `--dry-run`, `--print-effective-config`.
 
 ## QUIC listener and handshake
-- [ ] Complete QUIC server settings (idle timeout, stream limits, MTU).
+- [x] Complete QUIC server settings (idle timeout, stream limits, MTU).
 - [ ] Map Hytale client certificate to per-session context.
-- [ ] Add per-IP rate limiting and concurrent session caps in the listener.
-- [ ] Implement handshake timeout cleanup for half-open streams.
+- [x] Add per-IP rate limiting and concurrent session caps in the listener.
+- [x] Implement handshake timeout cleanup for half-open streams.
 
 ## Routing and pools
 - [ ] Add pool capacity tracking and reject when `maxPlayers` exceeded.

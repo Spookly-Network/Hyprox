@@ -19,10 +19,12 @@ import java.util.concurrent.TimeUnit;
 public final class ProxyStreamInitializer extends ChannelInitializer<QuicStreamChannel> {
     private final HyproxConfig config;
     private final RoutingPlanner routingPlanner;
+    private final ProxySessionLimiter sessionLimiter;
 
-    public ProxyStreamInitializer(HyproxConfig config, RoutingPlanner routingPlanner) {
+    public ProxyStreamInitializer(HyproxConfig config, RoutingPlanner routingPlanner, ProxySessionLimiter sessionLimiter) {
         this.config = Objects.requireNonNull(config, "config");
         this.routingPlanner = Objects.requireNonNull(routingPlanner, "routingPlanner");
+        this.sessionLimiter = Objects.requireNonNull(sessionLimiter, "sessionLimiter");
     }
 
     @Override
@@ -34,6 +36,6 @@ public final class ProxyStreamInitializer extends ChannelInitializer<QuicStreamC
         pipeline.addLast("packetDecoder", new PacketDecoder());
         pipeline.addLast("packetEncoder", new PacketEncoder());
         pipeline.addLast("packetArrayEncoder", new PacketArrayEncoder());
-        pipeline.addLast("handler", new ProxyStreamHandler(config, routingPlanner));
+        pipeline.addLast("handler", new ProxyStreamHandler(config, routingPlanner, sessionLimiter));
     }
 }

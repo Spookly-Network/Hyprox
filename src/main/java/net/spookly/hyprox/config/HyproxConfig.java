@@ -35,6 +35,8 @@ public class HyproxConfig {
         public String backendCa;
         public Boolean requireClientCert;
         public List<String> backendSanAllowlist;
+        public Integer maxBidirectionalStreams;
+        public Integer maxUnidirectionalStreams;
         public Integer mtu;
     }
 

@@ -25,12 +25,19 @@ import java.util.concurrent.TimeUnit;
 public final class ProxyServer {
     private final HyproxConfig config;
     private final RoutingPlanner routingPlanner;
+    private final ProxySessionLimiter sessionLimiter;
     private EventLoopGroup workerGroup;
     private Channel channel;
 
     public ProxyServer(HyproxConfig config, RoutingPlanner routingPlanner) {
         this.config = Objects.requireNonNull(config, "config");
         this.routingPlanner = Objects.requireNonNull(routingPlanner, "routingPlanner");
+        HyproxConfig.LimitsConfig limits = config.proxy == null ? null : config.proxy.limits;
+        this.sessionLimiter = new ProxySessionLimiter(
+                limits == null ? null : limits.handshakesPerMinutePerIp,
+                limits == null ? null : limits.concurrentPerIp,
+                null
+        );
     }
 
     /**
@@ -45,10 +52,16 @@ public final class ProxyServer {
         QuicSslContext sslContext = buildSslContext(quic);
         QuicServerCodecBuilder codecBuilder = new QuicServerCodecBuilder()
                 .sslContext(sslContext)
-                .streamHandler(new ProxyStreamInitializer(config, routingPlanner));
+                .streamHandler(new ProxyStreamInitializer(config, routingPlanner, sessionLimiter));
 
         if (proxy.timeouts != null && proxy.timeouts.idleMs != null) {
             codecBuilder.maxIdleTimeout(proxy.timeouts.idleMs, TimeUnit.MILLISECONDS);
+        }
+        if (quic.maxBidirectionalStreams != null && quic.maxBidirectionalStreams > 0) {
+            codecBuilder.initialMaxStreamsBidirectional(quic.maxBidirectionalStreams);
+        }
+        if (quic.maxUnidirectionalStreams != null && quic.maxUnidirectionalStreams > 0) {
+            codecBuilder.initialMaxStreamsUnidirectional(quic.maxUnidirectionalStreams);
         }
         if (quic.mtu != null && quic.mtu > 0) {
             codecBuilder.maxRecvUdpPayloadSize(quic.mtu);

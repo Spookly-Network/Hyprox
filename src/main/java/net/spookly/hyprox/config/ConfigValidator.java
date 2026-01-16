@@ -69,6 +69,12 @@ public final class ConfigValidator {
             if (usesFullProxy(config)) {
                 requireNonBlank(errors, quic.backendCa, "proxy.quic.backendCa");
             }
+            if (quic.maxBidirectionalStreams != null && quic.maxBidirectionalStreams <= 0) {
+                errors.add("proxy.quic.maxBidirectionalStreams must be greater than 0");
+            }
+            if (quic.maxUnidirectionalStreams != null && quic.maxUnidirectionalStreams <= 0) {
+                errors.add("proxy.quic.maxUnidirectionalStreams must be greater than 0");
+            }
         }
 
         if (proxy.timeouts != null) {

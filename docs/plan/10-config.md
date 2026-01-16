@@ -29,6 +29,8 @@ proxy:
     backendCa: path
     requireClientCert: bool
     backendSanAllowlist: [string]
+    maxBidirectionalStreams: int
+    maxUnidirectionalStreams: int
     mtu: int
   timeouts:
     handshakeMs: int
@@ -152,6 +154,8 @@ proxy:
     backendCa: config/certs/backend-ca.crt
     requireClientCert: true
     backendSanAllowlist: ["backend-1.local", "backend-2.local"]
+    maxBidirectionalStreams: 100
+    maxUnidirectionalStreams: 100
     mtu: 1350
   timeouts:
     handshakeMs: 10000
