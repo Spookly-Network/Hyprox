@@ -23,22 +23,42 @@ public final class BackendRegistry {
     private final int defaultTtlSeconds;
     private final int heartbeatGraceSeconds;
     private final int drainTimeoutSeconds;
+    private final RegistryEventListener eventListener;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     /**
      * Create a registry with explicit defaults.
      */
     public BackendRegistry(Set<String> staticBackendIds, int defaultTtlSeconds, int heartbeatGraceSeconds, int drainTimeoutSeconds) {
+        this(staticBackendIds, defaultTtlSeconds, heartbeatGraceSeconds, drainTimeoutSeconds, RegistryEventListener.NOOP);
+    }
+
+    /**
+     * Create a registry with explicit defaults and an audit listener.
+     */
+    public BackendRegistry(Set<String> staticBackendIds,
+                           int defaultTtlSeconds,
+                           int heartbeatGraceSeconds,
+                           int drainTimeoutSeconds,
+                           RegistryEventListener eventListener) {
         this.staticBackendIds = staticBackendIds;
         this.defaultTtlSeconds = defaultTtlSeconds;
         this.heartbeatGraceSeconds = heartbeatGraceSeconds;
         this.drainTimeoutSeconds = drainTimeoutSeconds;
+        this.eventListener = eventListener == null ? RegistryEventListener.NOOP : eventListener;
     }
 
     /**
      * Build a registry with defaults extracted from config.
      */
     public static BackendRegistry fromConfig(HyproxConfig config) {
+        return fromConfig(config, RegistryEventListener.NOOP);
+    }
+
+    /**
+     * Build a registry with defaults extracted from config and an audit listener.
+     */
+    public static BackendRegistry fromConfig(HyproxConfig config, RegistryEventListener eventListener) {
         Set<String> staticIds = RegistryUtils.collectStaticBackendIds(config);
         int ttlSeconds = 30;
         int graceSeconds = 10;
@@ -54,7 +74,7 @@ public final class BackendRegistry {
                 drainSeconds = config.registry.defaults.drainTimeoutSeconds;
             }
         }
-        return new BackendRegistry(staticIds, ttlSeconds, graceSeconds, drainSeconds);
+        return new BackendRegistry(staticIds, ttlSeconds, graceSeconds, drainSeconds, eventListener);
     }
 
     /**
@@ -103,8 +123,10 @@ public final class BackendRegistry {
                 throw new IllegalArgumentException("backend id already registered by another orchestrator");
             }
             existing.markHeartbeat(now, expiresAt);
+            emit(RegistryEventType.REGISTER, existing, now);
             return existing;
         }
+        emit(RegistryEventType.REGISTER, stored, now);
         return stored;
     }
 
@@ -129,6 +151,7 @@ public final class BackendRegistry {
             ttlSeconds = defaultTtlSeconds;
         }
         backend.markHeartbeat(now, now.plusSeconds(ttlSeconds));
+        emit(RegistryEventType.HEARTBEAT, backend, now);
         return backend;
     }
 
@@ -151,6 +174,7 @@ public final class BackendRegistry {
         }
         Instant now = Instant.now();
         backend.markDraining(now, now.plusSeconds(drainSeconds));
+        emit(RegistryEventType.DRAIN, backend, now);
         return backend;
     }
 
@@ -183,8 +207,18 @@ public final class BackendRegistry {
         for (Map.Entry<String, RegisteredBackend> entry : backends.entrySet()) {
             RegisteredBackend backend = entry.getValue();
             if (backend.isExpired(cutoff)) {
-                backends.remove(entry.getKey());
+                if (backends.remove(entry.getKey(), backend)) {
+                    emit(RegistryEventType.EXPIRE, backend, now);
+                }
             }
+        }
+    }
+
+    private void emit(RegistryEventType type, RegisteredBackend backend, Instant now) {
+        try {
+            eventListener.onEvent(RegistryEvent.from(type, backend, now));
+        } catch (RuntimeException e) {
+            System.err.println("Failed to emit registry audit event: " + e.getMessage());
         }
     }
 

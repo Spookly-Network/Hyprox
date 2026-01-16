@@ -4,6 +4,8 @@ import net.spookly.hyprox.config.ConfigLoader;
 import net.spookly.hyprox.config.HyproxConfig;
 import net.spookly.hyprox.proxy.ProxyServer;
 import net.spookly.hyprox.registry.BackendRegistry;
+import net.spookly.hyprox.registry.RegistryAuditLogger;
+import net.spookly.hyprox.registry.RegistryEventListener;
 import net.spookly.hyprox.registry.RegistryServer;
 import net.spookly.hyprox.routing.PathSelector;
 import net.spookly.hyprox.routing.RoutingPlanner;
@@ -31,7 +33,11 @@ public final class HyproxMain {
         System.out.println("Hyprox config loaded: mode=" + config.proxy.mode
                 + " listen=" + config.proxy.listen.host + ":" + config.proxy.listen.port);
 
-        BackendRegistry registry = BackendRegistry.fromConfig(config);
+        RegistryEventListener eventListener = RegistryEventListener.NOOP;
+        if (config.registry != null && Boolean.TRUE.equals(config.registry.enabled)) {
+            eventListener = RegistryAuditLogger.INSTANCE;
+        }
+        BackendRegistry registry = BackendRegistry.fromConfig(config, eventListener);
         RoutingService routingService = new RoutingService(config, registry);
         RoutingPlanner routingPlanner = new RoutingPlanner(routingService, new PathSelector(config));
         ProxyServer proxyServer = new ProxyServer(config, routingPlanner);

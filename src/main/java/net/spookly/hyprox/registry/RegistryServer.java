@@ -173,6 +173,7 @@ public final class RegistryServer {
             requireNonBlank(request.host, "host");
             int port = requirePort(request.port, "port");
             validateBackendPort(port);
+            validateBackendSanAllowlist(request.host);
             validateBackendHost(request.host);
 
             RegisteredBackend backend = new RegisteredBackend(
@@ -427,6 +428,19 @@ public final class RegistryServer {
         }
     }
 
+    private void validateBackendSanAllowlist(String host) {
+        if (config.proxy == null || config.proxy.quic == null) {
+            return;
+        }
+        List<String> allowlist = config.proxy.quic.backendSanAllowlist;
+        if (allowlist == null || allowlist.isEmpty()) {
+            return;
+        }
+        if (!matchesAllowlist(host, allowlist)) {
+            throw new IllegalArgumentException("backend host not allowed by SAN allowlist");
+        }
+    }
+
     private void validateBackendPort(int port) {
         if (!allowedPorts.isEmpty() && !allowedPorts.contains(port)) {
             throw new IllegalArgumentException("backend port not allowed");
@@ -525,6 +539,25 @@ public final class RegistryServer {
             return false;
         }
         return (bytes[0] & (byte) 0xfe) == (byte) 0xfc;
+    }
+
+    private boolean matchesAllowlist(String host, List<String> allowlist) {
+        String normalizedHost = host.trim().toLowerCase();
+        for (String entry : allowlist) {
+            if (entry == null || entry.trim().isEmpty()) {
+                continue;
+            }
+            String normalizedEntry = entry.trim().toLowerCase();
+            if (normalizedEntry.startsWith("*.")) {
+                String suffix = normalizedEntry.substring(1);
+                if (normalizedHost.endsWith(suffix) && normalizedHost.length() > suffix.length()) {
+                    return true;
+                }
+            } else if (normalizedHost.equals(normalizedEntry)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private List<Map<String, Object>> toView(List<RegisteredBackend> backends) {
