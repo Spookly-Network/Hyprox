@@ -8,7 +8,7 @@
 
 ## QUIC listener and handshake
 - [x] Complete QUIC server settings (idle timeout, stream limits, MTU).
-- [ ] Map Hytale client certificate to per-session context.
+- [x] Map Hytale client certificate to per-session context.
 - [x] Add per-IP rate limiting and concurrent session caps in the listener.
 - [x] Implement handshake timeout cleanup for half-open streams.
 

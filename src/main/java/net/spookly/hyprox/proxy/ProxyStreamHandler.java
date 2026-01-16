@@ -8,8 +8,10 @@ import com.hypixel.hytale.protocol.packets.connection.ClientType;
 import com.hypixel.hytale.protocol.packets.connection.Connect;
 import com.hypixel.hytale.protocol.packets.connection.Disconnect;
 import com.hypixel.hytale.protocol.packets.connection.DisconnectType;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.codec.quic.QuicChannel;
 import io.netty.handler.timeout.ReadTimeoutException;
 import net.spookly.hyprox.config.HyproxConfig;
 import net.spookly.hyprox.routing.BackendTarget;
@@ -18,7 +20,12 @@ import net.spookly.hyprox.routing.RoutingDecision;
 import net.spookly.hyprox.routing.RoutingPlanner;
 import net.spookly.hyprox.routing.RoutingRequest;
 
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLPeerUnverifiedException;
+import javax.net.ssl.SSLSession;
 import java.net.InetSocketAddress;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
 import java.util.Locale;
 import java.util.Objects;
 
@@ -85,6 +92,7 @@ public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet
             return;
         }
         sessionTracked = remoteAddress != null;
+        ensureSessionContext(ctx);
         ctx.fireChannelActive();
     }
 
@@ -129,6 +137,48 @@ public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet
     private void sendDisconnect(ChannelHandlerContext ctx, String reason, DisconnectType type) {
         Disconnect disconnect = new Disconnect(reason, type);
         ctx.writeAndFlush(disconnect).addListener(ProtocolUtil.CLOSE_ON_COMPLETE);
+    }
+
+    private void ensureSessionContext(ChannelHandlerContext ctx) {
+        Channel contextChannel = ctx.channel().parent() == null ? ctx.channel() : ctx.channel().parent();
+        if (contextChannel.attr(ProxySessionContext.SESSION_CONTEXT).get() != null) {
+            return;
+        }
+        X509Certificate certificate = resolveClientCertificate(contextChannel);
+        ProxySessionContext context = ProxySessionContext.from(remoteAddress, certificate);
+        contextChannel.attr(ProxySessionContext.SESSION_CONTEXT).set(context);
+    }
+
+    private X509Certificate resolveClientCertificate(Channel contextChannel) {
+        Channel channel = contextChannel;
+        if (!(channel instanceof QuicChannel) && channel.parent() != null) {
+            channel = channel.parent();
+        }
+        if (!(channel instanceof QuicChannel)) {
+            return null;
+        }
+        SSLEngine sslEngine = ((QuicChannel) channel).sslEngine();
+        if (sslEngine == null) {
+            return null;
+        }
+        SSLSession session = sslEngine.getSession();
+        if (session == null) {
+            return null;
+        }
+        try {
+            Certificate[] certificates = session.getPeerCertificates();
+            if (certificates == null || certificates.length == 0) {
+                return null;
+            }
+            for (Certificate certificate : certificates) {
+                if (certificate instanceof X509Certificate) {
+                    return (X509Certificate) certificate;
+                }
+            }
+        } catch (SSLPeerUnverifiedException ignored) {
+            return null;
+        }
+        return null;
     }
 
     private String resolveRemoteAddress(ChannelHandlerContext ctx) {
