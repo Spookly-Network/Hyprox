@@ -48,6 +48,7 @@ public final class RegistryServer {
     private final boolean allowLoopback;
     private final boolean allowPublicAddresses;
     private final RegistryRateLimiter rateLimiter;
+    private final RegistryAllowlistValidator allowlistValidator;
 
     public RegistryServer(HyproxConfig config, BackendRegistry registry) {
         this.config = Objects.requireNonNull(config, "config");
@@ -78,6 +79,7 @@ public final class RegistryServer {
         }
         int nonceTtl = Math.max(1, clockSkew * 2 + 1);
         this.nonceCache = new NonceCache(nonceTtl);
+        this.allowlistValidator = new RegistryAllowlistValidator(config);
     }
 
     /**
@@ -167,9 +169,9 @@ public final class RegistryServer {
                 return;
             }
             RegistryRequests.RegisterRequest request = readJson(body, RegistryRequests.RegisterRequest.class);
-            validateOrchestrator(request.orchestratorId, exchange);
-            validatePool(request.pool, request.orchestratorId);
-            validateBackendId(request.backendId, request.orchestratorId);
+            allowlistValidator.validateOrchestrator(request.orchestratorId, exchange.getRemoteAddress().getAddress());
+            allowlistValidator.validatePool(request.pool, request.orchestratorId);
+            allowlistValidator.validateBackendId(request.backendId, request.orchestratorId);
             requireNonBlank(request.host, "host");
             int port = requirePort(request.port, "port");
             validateBackendPort(port);
@@ -206,7 +208,7 @@ public final class RegistryServer {
                 return;
             }
             RegistryRequests.HeartbeatRequest request = readJson(body, RegistryRequests.HeartbeatRequest.class);
-            validateOrchestrator(request.orchestratorId, exchange);
+            allowlistValidator.validateOrchestrator(request.orchestratorId, exchange.getRemoteAddress().getAddress());
             requireNonBlank(request.backendId, "backendId");
             RegisteredBackend backend = registry.heartbeat(request.backendId, request.orchestratorId, request.ttlSeconds);
             Map<String, Object> data = new HashMap<>();
@@ -224,7 +226,7 @@ public final class RegistryServer {
                 return;
             }
             RegistryRequests.DrainRequest request = readJson(body, RegistryRequests.DrainRequest.class);
-            validateOrchestrator(request.orchestratorId, exchange);
+            allowlistValidator.validateOrchestrator(request.orchestratorId, exchange.getRemoteAddress().getAddress());
             requireNonBlank(request.backendId, "backendId");
             RegisteredBackend backend = registry.drain(request.backendId, request.orchestratorId, request.drainSeconds);
             Map<String, Object> data = new HashMap<>();
@@ -243,7 +245,7 @@ public final class RegistryServer {
                 return;
             }
             String orchestratorId = exchange.getRequestHeaders().getFirst("X-Hyprox-Orchestrator");
-            validateOrchestrator(orchestratorId, exchange);
+            allowlistValidator.validateOrchestrator(orchestratorId, exchange.getRemoteAddress().getAddress());
             Map<String, String> params = parseQueryParams(exchange.getRequestURI());
             String pool = params.get("pool");
             int limit = parsePositiveInt(params.get("limit"), maxListResults);
@@ -331,78 +333,6 @@ public final class RegistryServer {
             return false;
         }
         return true;
-    }
-
-    private void validateOrchestrator(String orchestratorId, HttpExchange exchange) {
-        requireNonBlank(orchestratorId, "orchestratorId");
-        if (config.registry.allowlist == null) {
-            throw new IllegalArgumentException("registry allowlist missing");
-        }
-        InetAddress address = exchange.getRemoteAddress().getAddress();
-        boolean matched = false;
-        for (HyproxConfig.RegistryAllowlistEntry entry : config.registry.allowlist) {
-            if (entry == null) {
-                continue;
-            }
-            if (!orchestratorId.equals(entry.orchestratorId)) {
-                continue;
-            }
-            if (entry.address == null || entry.address.equals(address.getHostAddress())) {
-                matched = true;
-            }
-        }
-        if (!matched) {
-            throw new IllegalArgumentException("orchestrator not allowlisted");
-        }
-    }
-
-    private void validatePool(String pool, String orchestratorId) {
-        requireNonBlank(pool, "pool");
-        if (config.routing == null || config.routing.pools == null || !config.routing.pools.containsKey(pool)) {
-            throw new IllegalArgumentException("pool not found: " + pool);
-        }
-        if (config.registry.allowlist == null) {
-            throw new IllegalArgumentException("registry allowlist missing");
-        }
-        boolean allowed = false;
-        for (HyproxConfig.RegistryAllowlistEntry entry : config.registry.allowlist) {
-            if (entry == null) {
-                continue;
-            }
-            if (!orchestratorId.equals(entry.orchestratorId)) {
-                continue;
-            }
-            if (entry.allowedPools != null && entry.allowedPools.contains(pool)) {
-                allowed = true;
-                break;
-            }
-        }
-        if (!allowed) {
-            throw new IllegalArgumentException("pool not allowed for orchestrator");
-        }
-    }
-
-    private void validateBackendId(String backendId, String orchestratorId) {
-        requireNonBlank(backendId, "backendId");
-        if (config.registry.allowlist == null) {
-            throw new IllegalArgumentException("registry allowlist missing");
-        }
-        for (HyproxConfig.RegistryAllowlistEntry entry : config.registry.allowlist) {
-            if (entry == null) {
-                continue;
-            }
-            if (!orchestratorId.equals(entry.orchestratorId)) {
-                continue;
-            }
-            if (entry.allowedBackendIdPrefixes != null) {
-                for (String prefix : entry.allowedBackendIdPrefixes) {
-                    if (backendId.startsWith(prefix)) {
-                        return;
-                    }
-                }
-            }
-        }
-        throw new IllegalArgumentException("backendId not allowed by orchestrator prefix rules");
     }
 
     private void validateBackendHost(String host) {

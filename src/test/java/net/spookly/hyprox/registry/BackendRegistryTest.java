@@ -2,6 +2,7 @@ package net.spookly.hyprox.registry;
 
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
@@ -55,6 +56,68 @@ class BackendRegistryTest {
 
         RegisteredBackend drained = registry.drain("dyn-1", "orch-1", 10);
         assertTrue(drained.draining());
+    }
+
+    @Test
+    void capsRegisterTtlToDefault() {
+        BackendRegistry registry = new BackendRegistry(Set.of(), 30, 5, 60);
+        RegisteredBackend backend = new RegisteredBackend(
+                "dyn-ttl",
+                "lobby",
+                "10.0.0.9",
+                9000,
+                1,
+                100,
+                List.of("lobby"),
+                "orch-1",
+                Instant.now(),
+                Instant.now(),
+                false
+        );
+        RegisteredBackend stored = registry.register(backend, 120);
+        assertEquals(30, Duration.between(stored.lastHeartbeat(), stored.expiresAt()).getSeconds());
+    }
+
+    @Test
+    void usesHeartbeatOverrideWhenLowerThanDefault() {
+        BackendRegistry registry = new BackendRegistry(Set.of(), 30, 5, 60);
+        RegisteredBackend backend = new RegisteredBackend(
+                "dyn-heartbeat",
+                "lobby",
+                "10.0.0.10",
+                9000,
+                1,
+                100,
+                List.of("lobby"),
+                "orch-1",
+                Instant.now(),
+                Instant.now(),
+                false
+        );
+        registry.register(backend);
+        RegisteredBackend heartbeat = registry.heartbeat("dyn-heartbeat", "orch-1", 12);
+        assertEquals(12, Duration.between(heartbeat.lastHeartbeat(), heartbeat.expiresAt()).getSeconds());
+    }
+
+    @Test
+    void capsDrainOverrideToDefault() {
+        BackendRegistry registry = new BackendRegistry(Set.of(), 30, 5, 60);
+        RegisteredBackend backend = new RegisteredBackend(
+                "dyn-drain",
+                "lobby",
+                "10.0.0.11",
+                9000,
+                1,
+                100,
+                List.of("lobby"),
+                "orch-1",
+                Instant.now(),
+                Instant.now(),
+                false
+        );
+        registry.register(backend);
+        RegisteredBackend drained = registry.drain("dyn-drain", "orch-1", 120);
+        assertEquals(60, Duration.between(drained.lastHeartbeat(), drained.expiresAt()).getSeconds());
     }
 
     @Test
