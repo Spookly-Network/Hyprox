@@ -21,6 +21,7 @@ dependencies {
 
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'io.netty:netty-common:4.1.107.Final'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testRuntimeOnly(files "libs/HytaleServer.jar")
 }

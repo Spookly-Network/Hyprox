@@ -63,7 +63,7 @@ public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet
             return;
         }
         Connect connect = (Connect) msg;
-        RoutingDecision decision = routingPlanner.decide(toRequest(connect));
+        RoutingDecision decision = routingPlanner.decide(toRequest(ctx, connect));
         storeRoutingContext(ctx, decision);
         backendReservation = decision.reservation();
         BackendTarget backend = decision.backend();
@@ -110,7 +110,7 @@ public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet
         ctx.fireChannelInactive();
     }
 
-    private RoutingRequest toRequest(Connect connect) {
+    private RoutingRequest toRequest(ChannelHandlerContext ctx, Connect connect) {
         String clientType = mapClientType(connect.clientType);
         String referralSource = null;
         if (connect.referralData == null || connect.referralData.length == 0) {
@@ -120,7 +120,8 @@ public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet
                 referralSource = connect.referralSource.host.trim();
             }
         }
-        return new RoutingRequest(clientType, referralSource);
+        String selectionKey = resolveSelectionKey(ctx);
+        return new RoutingRequest(clientType, referralSource, selectionKey);
     }
 
     private String mapClientType(ClientType clientType) {
@@ -154,6 +155,22 @@ public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet
         X509Certificate certificate = resolveClientCertificate(contextChannel);
         ProxySessionContext context = ProxySessionContext.from(remoteAddress, certificate);
         contextChannel.attr(ProxySessionContext.SESSION_CONTEXT).set(context);
+    }
+
+    private String resolveSelectionKey(ChannelHandlerContext ctx) {
+        Channel contextChannel = resolveContextChannel(ctx);
+        if (contextChannel != null) {
+            ProxySessionContext context = contextChannel.attr(ProxySessionContext.SESSION_CONTEXT).get();
+            if (context != null) {
+                if (!isBlank(context.clientCertificateSha256())) {
+                    return context.clientCertificateSha256();
+                }
+                if (!isBlank(context.remoteAddress())) {
+                    return context.remoteAddress();
+                }
+            }
+        }
+        return isBlank(remoteAddress) ? null : remoteAddress;
     }
 
     private X509Certificate resolveClientCertificate(Channel contextChannel) {
@@ -223,5 +240,9 @@ public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet
             backendReservation.release();
             backendReservation = null;
         }
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 }

@@ -22,7 +22,7 @@ class RoutingServiceTest {
         config.routing.pools.put("edit", pool("weighted", backend("edit-1")));
 
         RoutingService service = new RoutingService(config, null, new BackendCapacityTracker(), new BackendHealthTracker());
-        RoutingResult result = service.route(new RoutingRequest("editor", null));
+        RoutingResult result = service.route(new RoutingRequest("editor", null, null));
 
         assertEquals("edit", result.pool());
         assertNotNull(result.backend());
@@ -36,7 +36,7 @@ class RoutingServiceTest {
         config.routing.pools.put("edit", pool("weighted", backend("edit-1")));
 
         RoutingService service = new RoutingService(config, null, new BackendCapacityTracker(), new BackendHealthTracker());
-        RoutingResult result = service.route(new RoutingRequest("game", null));
+        RoutingResult result = service.route(new RoutingRequest("game", null, null));
 
         assertEquals("lobby", result.pool());
         assertNotNull(result.backend());
@@ -49,9 +49,9 @@ class RoutingServiceTest {
         config.routing.pools.put("lobby", pool("round_robin", backend("lobby-1"), backend("lobby-2")));
 
         RoutingService service = new RoutingService(config, null, new BackendCapacityTracker(), new BackendHealthTracker());
-        RoutingResult first = service.route(new RoutingRequest("game", null));
-        RoutingResult second = service.route(new RoutingRequest("game", null));
-        RoutingResult third = service.route(new RoutingRequest("game", null));
+        RoutingResult first = service.route(new RoutingRequest("game", null, null));
+        RoutingResult second = service.route(new RoutingRequest("game", null, null));
+        RoutingResult third = service.route(new RoutingRequest("game", null, null));
 
         assertEquals("lobby-1", first.backend().id());
         assertEquals("lobby-2", second.backend().id());
@@ -95,8 +95,8 @@ class RoutingServiceTest {
         BackendCapacityTracker tracker = new BackendCapacityTracker();
         RoutingService service = new RoutingService(config, null, tracker, new BackendHealthTracker());
 
-        RoutingResult first = service.route(new RoutingRequest("game", null));
-        RoutingResult second = service.route(new RoutingRequest("game", null));
+        RoutingResult first = service.route(new RoutingRequest("game", null, null));
+        RoutingResult second = service.route(new RoutingRequest("game", null, null));
 
         assertNotNull(first.backend());
         assertNotNull(first.reservation());
@@ -104,7 +104,7 @@ class RoutingServiceTest {
         assertEquals("pool_full", second.reason());
 
         first.reservation().release();
-        RoutingResult third = service.route(new RoutingRequest("game", null));
+        RoutingResult third = service.route(new RoutingRequest("game", null, null));
         assertNotNull(third.backend());
         third.reservation().release();
     }
@@ -120,10 +120,36 @@ class RoutingServiceTest {
         healthTracker.recordPassiveFailure(unhealthy);
 
         RoutingService service = new RoutingService(config, null, new BackendCapacityTracker(), healthTracker);
-        RoutingResult result = service.route(new RoutingRequest("game", null));
+        RoutingResult result = service.route(new RoutingRequest("game", null, null));
 
         assertNotNull(result.backend());
         assertEquals("lobby-2", result.backend().id());
+    }
+
+    @Test
+    void consistentSelectionStaysStableWhenWeightIncreases() {
+        HyproxConfig config = baseConfig();
+        config.routing.pools.put("lobby", pool("weighted", backend("lobby-1"), backend("lobby-2")));
+
+        RoutingService service = new RoutingService(config, null, new BackendCapacityTracker(), new BackendHealthTracker());
+        String selectionKey = "client-42";
+        RoutingResult initial = service.route(new RoutingRequest("game", null, selectionKey));
+
+        assertNotNull(initial.backend());
+        String selectedId = initial.backend().id();
+
+        for (HyproxConfig.BackendConfig backend : config.routing.pools.get("lobby").backends) {
+            if (selectedId.equals(backend.id)) {
+                backend.weight = 5;
+                break;
+            }
+        }
+
+        RoutingService updated = new RoutingService(config, null, new BackendCapacityTracker(), new BackendHealthTracker());
+        RoutingResult afterChange = updated.route(new RoutingRequest("game", null, selectionKey));
+
+        assertNotNull(afterChange.backend());
+        assertEquals(selectedId, afterChange.backend().id());
     }
 
     private HyproxConfig baseConfig() {

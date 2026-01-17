@@ -15,7 +15,7 @@
 ## Routing and pools
 - [x] Add pool capacity tracking and reject when `maxPlayers` exceeded.
 - [x] Add pool health scoring (passive failures + optional active ping).
-- [ ] Add consistent backend selection when weights change.
+- [x] Add consistent backend selection when weights change.
 - [x] Persist routing decision reason for metrics/logging.
 
 ## Referral payloads

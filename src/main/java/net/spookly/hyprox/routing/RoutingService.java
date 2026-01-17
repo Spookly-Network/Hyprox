@@ -49,9 +49,9 @@ public final class RoutingService {
         List<BackendTarget> healthyCandidates = filterHealthy(candidates);
         boolean hasHealthy = healthTracker != null && !healthyCandidates.isEmpty();
         List<BackendTarget> selection = hasHealthy ? healthyCandidates : candidates;
-        BackendReservation reservation = selectBackend(pool, selection, hasHealthy);
+        BackendReservation reservation = selectBackend(pool, selection, hasHealthy, request);
         if (reservation == null && hasHealthy && healthyCandidates.size() < candidates.size()) {
-            reservation = selectBackend(pool, candidates, false);
+            reservation = selectBackend(pool, candidates, false, request);
         }
         if (reservation == null) {
             return new RoutingResult(pool, null, null, "pool_full");
@@ -127,7 +127,10 @@ public final class RoutingService {
         return true;
     }
 
-    private BackendReservation selectBackend(String pool, List<BackendTarget> candidates, boolean applyHealth) {
+    private BackendReservation selectBackend(String pool,
+                                             List<BackendTarget> candidates,
+                                             boolean applyHealth,
+                                             RoutingRequest request) {
         List<BackendTarget> remaining = new ArrayList<>(candidates);
         PoolPolicy policy = PoolPolicy.WEIGHTED;
         if (config.routing != null && config.routing.pools != null) {
@@ -139,7 +142,7 @@ public final class RoutingService {
         while (!remaining.isEmpty()) {
             BackendTarget candidate = policy == PoolPolicy.ROUND_ROBIN
                     ? selectRoundRobin(pool, remaining)
-                    : selectWeighted(remaining, applyHealth);
+                    : selectWeighted(remaining, applyHealth, request);
             if (candidate == null) {
                 return null;
             }
@@ -161,7 +164,18 @@ public final class RoutingService {
         return candidates.get(index);
     }
 
-    private BackendTarget selectWeighted(List<BackendTarget> candidates, boolean applyHealth) {
+    private BackendTarget selectWeighted(List<BackendTarget> candidates, boolean applyHealth, RoutingRequest request) {
+        if (candidates.isEmpty()) {
+            return null;
+        }
+        String selectionKey = request == null ? null : request.selectionKey();
+        if (!isBlank(selectionKey)) {
+            return selectConsistentWeighted(candidates, selectionKey, applyHealth);
+        }
+        return selectWeightedRandom(candidates, applyHealth);
+    }
+
+    private BackendTarget selectWeightedRandom(List<BackendTarget> candidates, boolean applyHealth) {
         if (candidates.isEmpty()) {
             return null;
         }
@@ -185,6 +199,56 @@ public final class RoutingService {
             }
         }
         return candidates.get(candidates.size() - 1);
+    }
+
+    /**
+     * Deterministic weighted selection using rendezvous hashing.
+     */
+    private BackendTarget selectConsistentWeighted(List<BackendTarget> candidates,
+                                                   String selectionKey,
+                                                   boolean applyHealth) {
+        BackendTarget best = null;
+        double bestScore = Double.POSITIVE_INFINITY;
+        for (BackendTarget candidate : candidates) {
+            int weight = weightFor(candidate, applyHealth);
+            if (weight <= 0) {
+                continue;
+            }
+            double score = rendezvousScore(selectionKey, candidate, weight);
+            if (score < bestScore) {
+                bestScore = score;
+                best = candidate;
+            }
+        }
+        return best;
+    }
+
+    private double rendezvousScore(String selectionKey, BackendTarget candidate, int weight) {
+        String backendKey = backendSelectionKey(candidate);
+        long hash = fnv1a64(selectionKey + "|" + backendKey);
+        double unit = toUnitInterval(hash);
+        return -Math.log(unit) / weight;
+    }
+
+    private String backendSelectionKey(BackendTarget candidate) {
+        if (!isBlank(candidate.id())) {
+            return candidate.id();
+        }
+        return candidate.host() + ":" + candidate.port();
+    }
+
+    private long fnv1a64(String value) {
+        long hash = 0xcbf29ce484222325L;
+        for (byte element : value.getBytes(java.nio.charset.StandardCharsets.UTF_8)) {
+            hash ^= (element & 0xff);
+            hash *= 0x100000001b3L;
+        }
+        return hash;
+    }
+
+    private double toUnitInterval(long hash) {
+        long value = hash >>> 1;
+        return (value + 1D) / ((double) Long.MAX_VALUE + 1D);
     }
 
     private BackendReservation tryReserve(BackendTarget candidate) {
