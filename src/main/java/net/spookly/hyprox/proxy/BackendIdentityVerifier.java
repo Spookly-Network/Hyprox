@@ -46,7 +46,7 @@ public final class BackendIdentityVerifier {
         if (!identity.matchesAllowlist(allowlist, backendHost)) {
             return VerificationResult.failed("backend certificate not allowed");
         }
-        return VerificationResult.ok();
+        return VerificationResult.success();
     }
 
     private static X509Certificate extractCertificate(QuicChannel channel) {
@@ -255,12 +255,16 @@ public final class BackendIdentityVerifier {
             this.reason = reason;
         }
 
-        public static VerificationResult ok() {
+        public static VerificationResult success() {
             return new VerificationResult(true, null);
         }
 
         public static VerificationResult failed(String reason) {
             return new VerificationResult(false, reason);
+        }
+
+        public boolean ok() {
+            return ok;
         }
 
         public boolean isOk() {
