@@ -78,7 +78,7 @@
 - [ ] Load tests for concurrent sessions and buffer limits.
 
 ## Docs and ops
-- [ ] Document runbooks for cert rotation and key management.
+- [x] Document runbooks for cert rotation and key management.
 - [x] Document registry usage for orchestrators (examples + curl).
 - [x] Add troubleshooting guide for common disconnects and TLS errors.
 - [x] Add usage/setup docs explaining config fields.
