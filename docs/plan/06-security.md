@@ -9,6 +9,7 @@ mTLS and trust anchors
 - Proxy validates client certs against a pinned client CA bundle; no plaintext or unauthenticated fallback.
 - Proxy validates backend server certs (CA + SAN/hostname or explicit allowlist).
 - Backends pin the proxy CA and accept only proxy client certs for inbound QUIC.
+- QUIC/TLS cipher suites are configurable to meet deployment hardening requirements.
 
 Referral payloads
 - Signed envelope with `keyId`, `issuedAt`, `ttlSeconds`, `nonce`, `targetBackendId`, and `clientUuid`.

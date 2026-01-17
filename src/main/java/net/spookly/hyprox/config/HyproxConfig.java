@@ -29,6 +29,10 @@ public class HyproxConfig {
 
     public static class QuicConfig {
         public List<String> alpn;
+        /**
+         * Optional TLS 1.3 cipher suites to allow for QUIC connections.
+         */
+        public List<String> cipherSuites;
         public String cert;
         public String key;
         public String clientCa;

@@ -23,6 +23,7 @@ proxy:
   fullProxyPools: [poolName]
   quic:
     alpn: [string]
+    cipherSuites: [string]
     cert: path
     key: path
     clientCa: path
@@ -160,6 +161,7 @@ proxy:
   fullProxyPools: ["game"]
   quic:
     alpn: ["hytale/1"]
+    cipherSuites: ["TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384"]
     cert: config/certs/proxy.crt
     key: config/certs/proxy.key
     clientCa: config/certs/hytale-client-ca.crt
@@ -315,6 +317,7 @@ proxy:
   defaultPath: redirect
   quic:
     alpn: ["hytale/1"]
+    cipherSuites: ["TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384"]
     cert: config/certs/proxy.crt
     key: config/certs/proxy.key
     clientCa: config/certs/hytale-client-ca.crt
@@ -339,6 +342,7 @@ proxy:
   defaultPath: full
   quic:
     alpn: ["hytale/1"]
+    cipherSuites: ["TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384"]
     cert: config/certs/proxy.crt
     key: config/certs/proxy.key
     clientCa: config/certs/hytale-client-ca.crt

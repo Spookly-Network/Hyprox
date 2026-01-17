@@ -61,6 +61,17 @@ public final class ConfigValidator {
             if (quic.alpn == null || quic.alpn.isEmpty()) {
                 errors.add("proxy.quic.alpn must include at least one ALPN");
             }
+            if (quic.cipherSuites != null) {
+                if (quic.cipherSuites.isEmpty()) {
+                    errors.add("proxy.quic.cipherSuites must include at least one cipher suite");
+                } else {
+                    for (String cipher : quic.cipherSuites) {
+                        if (isBlank(cipher)) {
+                            errors.add("proxy.quic.cipherSuites must not include blank entries");
+                        }
+                    }
+                }
+            }
             requireNonBlank(errors, quic.cert, "proxy.quic.cert");
             requireNonBlank(errors, quic.key, "proxy.quic.key");
             if (isTrue(quic.requireClientCert)) {

@@ -119,6 +119,7 @@ public final class ProxyServer {
         if (alpn != null && !alpn.isEmpty()) {
             builder.applicationProtocols(alpn.toArray(new String[0]));
         }
+        QuicSslConfigurer.applyCipherSuites(builder, quic.cipherSuites);
         ClientAuth clientAuth = ClientAuth.NONE;
         boolean requireClientCert = Boolean.TRUE.equals(quic.requireClientCert);
         if (requireClientCert) {

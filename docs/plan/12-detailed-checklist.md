@@ -64,8 +64,8 @@
 - [ ] Add audit logs for registry and routing decisions.
 
 ## Security hardening
-- [ ] Add TLS/QUIC cipher suite configuration and defaults.
-- [ ] Enforce nonce replay protection for registry and referral payloads.
+- [x] Add TLS/QUIC cipher suite configuration and defaults.
+- [x] Enforce nonce replay protection for registry and referral payloads.
 - [x] Add request rate limits on registry endpoints.
 - [x] Add allowlist checks for registry source IPs and orchestrator IDs.
 

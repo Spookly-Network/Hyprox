@@ -118,6 +118,7 @@ public final class BackendConnector {
         if (alpn != null && !alpn.isEmpty()) {
             builder.applicationProtocols(alpn.toArray(new String[0]));
         }
+        QuicSslConfigurer.applyCipherSuites(builder, quic.cipherSuites);
         return builder.build();
     }
 
