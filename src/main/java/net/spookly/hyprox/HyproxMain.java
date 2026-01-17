@@ -5,12 +5,14 @@ import net.spookly.hyprox.config.ConfigPrinter;
 import net.spookly.hyprox.config.ConfigWarnings;
 import net.spookly.hyprox.config.HyproxConfig;
 import net.spookly.hyprox.auth.ReferralService;
+import net.spookly.hyprox.proxy.QuicBackendHealthProbe;
 import net.spookly.hyprox.proxy.ProxyServer;
 import net.spookly.hyprox.registry.BackendRegistry;
 import net.spookly.hyprox.registry.RegistryAuditLogger;
 import net.spookly.hyprox.registry.RegistryEventListener;
 import net.spookly.hyprox.registry.RegistryServer;
 import net.spookly.hyprox.routing.BackendCapacityTracker;
+import net.spookly.hyprox.routing.BackendHealthProbeService;
 import net.spookly.hyprox.routing.BackendHealthTracker;
 import net.spookly.hyprox.routing.PathSelector;
 import net.spookly.hyprox.routing.RoutingPlanner;
@@ -61,6 +63,17 @@ public final class HyproxMain {
         ProxyServer proxyServer = new ProxyServer(config, routingPlanner, referralService);
         proxyServer.start();
 
+        BackendHealthProbeService healthProbeService = null;
+        if (config.routing != null && config.routing.health != null) {
+            healthProbeService = new BackendHealthProbeService(
+                    config,
+                    routingService,
+                    healthTracker,
+                    new QuicBackendHealthProbe(config)
+            );
+            healthProbeService.start();
+        }
+
         RegistryServer registryServer = null;
         if (config.registry != null && Boolean.TRUE.equals(config.registry.enabled)) {
             registryServer = new RegistryServer(config, registry);
@@ -69,8 +82,12 @@ public final class HyproxMain {
 
         CountDownLatch latch = new CountDownLatch(1);
         RegistryServer finalRegistryServer = registryServer;
+        BackendHealthProbeService finalHealthProbeService = healthProbeService;
         ProxyServer finalProxyServer = proxyServer;
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            if (finalHealthProbeService != null) {
+                finalHealthProbeService.stop();
+            }
             if (finalRegistryServer != null) {
                 finalRegistryServer.stop();
             }

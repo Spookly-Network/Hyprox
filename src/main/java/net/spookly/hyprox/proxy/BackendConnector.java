@@ -25,6 +25,7 @@ import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Establishes QUIC connections from the proxy to backend servers.
@@ -51,6 +52,12 @@ public final class BackendConnector {
     public Future<BackendConnection> connect(BackendTarget backend) {
         Objects.requireNonNull(backend, "backend");
         Promise<BackendConnection> promise = workerGroup.next().newPromise();
+        ConnectionAttempt attempt = new ConnectionAttempt();
+        promise.addListener(future -> {
+            if (future.isCancelled()) {
+                attempt.close();
+            }
+        });
         Bootstrap bootstrap = new Bootstrap();
         bootstrap.group(workerGroup)
                 .channel(NioDatagramChannel.class)
@@ -64,6 +71,11 @@ public final class BackendConnector {
                 return;
             }
             Channel datagramChannel = (Channel) future.getNow();
+            attempt.setDatagram(datagramChannel);
+            if (promise.isCancelled()) {
+                datagramChannel.close();
+                return;
+            }
             InetSocketAddress remoteAddress = new InetSocketAddress(backend.host(), backend.port());
             QuicChannelBootstrap quicBootstrap = QuicChannel.newBootstrap(datagramChannel)
                     .handler(new BackendQuicChannelHandler())
@@ -76,6 +88,12 @@ public final class BackendConnector {
                     return;
                 }
                 QuicChannel quicChannel = (QuicChannel) connectFuture.getNow();
+                attempt.setQuic(quicChannel);
+                if (promise.isCancelled()) {
+                    quicChannel.close();
+                    datagramChannel.close();
+                    return;
+                }
                 BackendIdentityVerifier.VerificationResult result = BackendIdentityVerifier.verify(
                         quicChannel,
                         backend.host(),
@@ -92,12 +110,19 @@ public final class BackendConnector {
                             if (!streamFuture.isSuccess()) {
                                 quicChannel.close();
                                 datagramChannel.close();
-                                promise.setFailure(streamFuture.cause());
-                                return;
-                            }
-                            QuicStreamChannel streamChannel = (QuicStreamChannel) streamFuture.getNow();
-                            promise.setSuccess(new BackendConnection(backend, datagramChannel, quicChannel, streamChannel));
-                        });
+                            promise.setFailure(streamFuture.cause());
+                            return;
+                        }
+                        QuicStreamChannel streamChannel = (QuicStreamChannel) streamFuture.getNow();
+                        attempt.setStream(streamChannel);
+                        if (promise.isCancelled()) {
+                            streamChannel.close();
+                            quicChannel.close();
+                            datagramChannel.close();
+                            return;
+                        }
+                        promise.setSuccess(new BackendConnection(backend, datagramChannel, quicChannel, streamChannel));
+                    });
             });
         });
         return promise;
@@ -148,5 +173,38 @@ public final class BackendConnector {
     }
 
     private static final class BackendStreamHandler extends io.netty.channel.ChannelInboundHandlerAdapter {
+    }
+
+    private static final class ConnectionAttempt {
+        private final AtomicReference<Channel> datagram = new AtomicReference<>();
+        private final AtomicReference<QuicChannel> quic = new AtomicReference<>();
+        private final AtomicReference<QuicStreamChannel> stream = new AtomicReference<>();
+
+        private void setDatagram(Channel channel) {
+            datagram.set(channel);
+        }
+
+        private void setQuic(QuicChannel channel) {
+            quic.set(channel);
+        }
+
+        private void setStream(QuicStreamChannel channel) {
+            stream.set(channel);
+        }
+
+        private void close() {
+            QuicStreamChannel streamChannel = stream.get();
+            if (streamChannel != null && streamChannel.isActive()) {
+                streamChannel.close();
+            }
+            QuicChannel quicChannel = quic.get();
+            if (quicChannel != null && quicChannel.isActive()) {
+                quicChannel.close();
+            }
+            Channel datagramChannel = datagram.get();
+            if (datagramChannel != null && datagramChannel.isActive()) {
+                datagramChannel.close();
+            }
+        }
     }
 }

@@ -112,7 +112,10 @@ Routing picks a pool and backend for each client:
 - `pools`: static pool definitions.
   - `policy`: `weighted` or `round_robin`.
   - `backends`: list of backends with `id`, `host`, `port`, `weight`, `maxPlayers`, `tags`.
-- `health`: optional health probe settings.
+- `health`: optional active probe settings.
+  - `intervalSeconds`: how often Hyprox runs a QUIC probe against each backend.
+  - `timeoutMs`: maximum time to wait for a probe before marking it as failed.
+  - Active probes update the same health score used by routing selection.
 
 ### migration
 
