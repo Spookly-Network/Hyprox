@@ -7,8 +7,17 @@ import net.spookly.hyprox.config.HyproxConfig;
  * Tracks global buffer caps for concurrent migration attempts.
  */
 public final class MigrationBufferManager {
+    /**
+     * Maximum buffered packets per migration.
+     */
     private final int maxBufferPackets;
+    /**
+     * Maximum buffered packets across all migrations.
+     */
     private final int maxGlobalPackets;
+    /**
+     * Current global buffered packet count.
+     */
     private int globalBuffered;
 
     public MigrationBufferManager(HyproxConfig config) {

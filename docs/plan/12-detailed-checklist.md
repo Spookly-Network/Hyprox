@@ -49,7 +49,7 @@
 - [x] Define migration ticket schema and signing rules.
 - [x] Implement prepare/auth/sync/freeze/cutover/resume/cleanup state machine.
 - [x] Add bounded buffers with global caps and rollback logic.
-- [ ] Add migration metrics and failure reason tracking.
+- [x] Add migration metrics and failure reason tracking.
 - [ ] Add safety: disable migration if ticket invalid or missing.
 
 ## Backend agent (optional)

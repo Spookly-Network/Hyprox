@@ -97,6 +97,40 @@ class MigrationStateMachineTest {
         assertEquals("migration cutover timeout", result.error());
     }
 
+    @Test
+    void recordsMetricsOnSuccessAndFailure() {
+        MutableClock clock = new MutableClock(Instant.parse("2025-01-01T00:00:00Z"), ZoneOffset.UTC);
+        MigrationMetrics metrics = new MigrationMetrics();
+        HyproxConfig config = buildConfig(1000, 1000);
+        MigrationStateMachine machine = new MigrationStateMachine(config, metrics, clock);
+
+        machine.start(context());
+        machine.markPrepared();
+        machine.markAuthComplete();
+        machine.markSyncComplete();
+        machine.markFrozen();
+        machine.markCutoverComplete();
+        machine.markResumed();
+        clock.advance(Duration.ofMillis(500));
+        machine.markCleanupComplete();
+
+        assertEquals(1, metrics.total());
+        assertEquals(1, metrics.success());
+        assertEquals(0, metrics.failure());
+        assertEquals(500, metrics.lastDurationMs());
+
+        machine.start(context());
+        clock.advance(Duration.ofMillis(1500));
+        MigrationStateMachine.TransitionResult result = machine.checkTimeouts();
+
+        assertFalse(result.ok());
+        assertEquals(2, metrics.total());
+        assertEquals(1, metrics.failure());
+        assertEquals("migration prepare timeout", metrics.lastFailureReason());
+        assertEquals(1500, metrics.lastDurationMs());
+        assertEquals(1L, metrics.failureCountsByReason().get("migration prepare timeout"));
+    }
+
     private HyproxConfig buildConfig(Integer prepareTimeoutMs, Integer cutoverTimeoutMs) {
         HyproxConfig config = new HyproxConfig();
         config.migration = new HyproxConfig.MigrationConfig();

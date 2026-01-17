@@ -21,10 +21,25 @@ public final class MigrationBuffer<T> {
     private static final String ERROR_BUFFER_LIMIT = "migration buffer limit exceeded";
     private static final String ERROR_GLOBAL_LIMIT = "migration global buffer limit exceeded";
 
+    /**
+     * Global buffer manager coordinating shared caps.
+     */
     private final MigrationBufferManager manager;
+    /**
+     * Migration metadata for this buffer.
+     */
     private final MigrationContext context;
+    /**
+     * Maximum buffered packets for this migration.
+     */
     private final int maxPackets;
+    /**
+     * FIFO packet buffer.
+     */
     private final Deque<T> queue = new ArrayDeque<>();
+    /**
+     * Whether the buffer is closed to new packets.
+     */
     private boolean closed;
 
     MigrationBuffer(MigrationBufferManager manager, MigrationContext context, int maxPackets) {

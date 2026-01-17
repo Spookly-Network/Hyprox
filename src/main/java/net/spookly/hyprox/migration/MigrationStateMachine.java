@@ -30,6 +30,10 @@ public final class MigrationStateMachine {
      */
     private final Clock clock;
     /**
+     * Optional metrics recorder for migration outcomes.
+     */
+    private final MigrationMetrics metrics;
+    /**
      * Whether migration is enabled in config.
      */
     private final boolean enabled;
@@ -72,13 +76,18 @@ public final class MigrationStateMachine {
     private String failureReason;
 
     public MigrationStateMachine(HyproxConfig config) {
-        this(config, Clock.systemUTC());
+        this(config, null, Clock.systemUTC());
     }
 
     public MigrationStateMachine(HyproxConfig config, Clock clock) {
+        this(config, null, clock);
+    }
+
+    public MigrationStateMachine(HyproxConfig config, MigrationMetrics metrics, Clock clock) {
         if (config == null) {
             throw new ConfigException("Config is required for migration state machine");
         }
+        this.metrics = metrics;
         this.clock = clock == null ? Clock.systemUTC() : clock;
         HyproxConfig.MigrationConfig migration = config.migration;
         this.enabled = migration != null && Boolean.TRUE.equals(migration.enabled);
@@ -250,6 +259,7 @@ public final class MigrationStateMachine {
         }
         Instant now = clock.instant();
         if (next == MigrationPhase.IDLE) {
+            recordSuccess(now);
             clearState();
             return TransitionResult.ok(phase);
         }
@@ -282,6 +292,7 @@ public final class MigrationStateMachine {
         phaseStartedAt = now;
         prepareDeadline = null;
         cutoverDeadline = null;
+        recordFailure(reason, now);
         return TransitionResult.error(phase, reason);
     }
 
@@ -300,6 +311,22 @@ public final class MigrationStateMachine {
             return null;
         }
         return now.plusMillis(timeoutMs);
+    }
+
+    private void recordSuccess(Instant now) {
+        if (metrics == null || startedAt == null || now == null) {
+            return;
+        }
+        long durationMs = Math.max(0L, now.toEpochMilli() - startedAt.toEpochMilli());
+        metrics.recordSuccess(durationMs);
+    }
+
+    private void recordFailure(String reason, Instant now) {
+        if (metrics == null || startedAt == null || now == null) {
+            return;
+        }
+        long durationMs = Math.max(0L, now.toEpochMilli() - startedAt.toEpochMilli());
+        metrics.recordFailure(reason, durationMs);
     }
 
     private boolean isPreparePhase(MigrationPhase phase) {
