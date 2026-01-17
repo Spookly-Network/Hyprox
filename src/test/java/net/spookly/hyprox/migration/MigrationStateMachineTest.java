@@ -21,7 +21,7 @@ class MigrationStateMachineTest {
         HyproxConfig config = buildConfig(1000, 1000);
         MigrationStateMachine machine = new MigrationStateMachine(config, fixedClock());
 
-        MigrationStateMachine.TransitionResult start = machine.start(context());
+        MigrationStateMachine.TransitionResult start = machine.start(context(), verifiedTicket());
         assertTrue(start.ok());
         assertEquals(MigrationPhase.PREPARE, machine.phase());
 
@@ -49,11 +49,25 @@ class MigrationStateMachineTest {
     }
 
     @Test
+    void rejectsMissingTicketWhenRequired() {
+        HyproxConfig config = buildConfig(1000, 1000);
+        MigrationStateMachine machine = new MigrationStateMachine(config, fixedClock());
+
+        MigrationStateMachine.TransitionResult start =
+                machine.start(context(), MigrationTicketService.VerifyResult.empty());
+
+        assertFalse(start.ok());
+        assertEquals(MigrationPhase.IDLE, machine.phase());
+        assertEquals("migration ticket missing", start.error());
+        assertNull(machine.context());
+    }
+
+    @Test
     void rejectsOutOfOrderTransition() {
         HyproxConfig config = buildConfig(1000, 1000);
         MigrationStateMachine machine = new MigrationStateMachine(config, fixedClock());
 
-        machine.start(context());
+        machine.start(context(), verifiedTicket());
         MigrationStateMachine.TransitionResult result = machine.markSyncComplete();
 
         assertFalse(result.ok());
@@ -67,7 +81,7 @@ class MigrationStateMachineTest {
         HyproxConfig config = buildConfig(1000, 1000);
         MigrationStateMachine machine = new MigrationStateMachine(config, clock);
 
-        machine.start(context());
+        machine.start(context(), verifiedTicket());
         clock.advance(Duration.ofMillis(1500));
 
         MigrationStateMachine.TransitionResult result = machine.checkTimeouts();
@@ -84,7 +98,7 @@ class MigrationStateMachineTest {
         HyproxConfig config = buildConfig(1000, 1000);
         MigrationStateMachine machine = new MigrationStateMachine(config, clock);
 
-        machine.start(context());
+        machine.start(context(), verifiedTicket());
         machine.markPrepared();
         machine.markAuthComplete();
         machine.markSyncComplete();
@@ -104,7 +118,7 @@ class MigrationStateMachineTest {
         HyproxConfig config = buildConfig(1000, 1000);
         MigrationStateMachine machine = new MigrationStateMachine(config, metrics, clock);
 
-        machine.start(context());
+        machine.start(context(), verifiedTicket());
         machine.markPrepared();
         machine.markAuthComplete();
         machine.markSyncComplete();
@@ -119,7 +133,7 @@ class MigrationStateMachineTest {
         assertEquals(0, metrics.failure());
         assertEquals(500, metrics.lastDurationMs());
 
-        machine.start(context());
+        machine.start(context(), verifiedTicket());
         clock.advance(Duration.ofMillis(1500));
         MigrationStateMachine.TransitionResult result = machine.checkTimeouts();
 
@@ -135,6 +149,7 @@ class MigrationStateMachineTest {
         HyproxConfig config = new HyproxConfig();
         config.migration = new HyproxConfig.MigrationConfig();
         config.migration.enabled = true;
+        config.migration.ticketRequired = true;
         config.migration.prepareTimeoutMs = prepareTimeoutMs;
         config.migration.cutoverTimeoutMs = cutoverTimeoutMs;
         return config;
@@ -146,6 +161,19 @@ class MigrationStateMachineTest {
                 "backend-a",
                 "backend-b"
         );
+    }
+
+    private MigrationTicketService.VerifyResult verifiedTicket() {
+        return MigrationTicketService.VerifyResult.ok(new MigrationTicket(
+                "k1",
+                1735689600L,
+                30,
+                "nonce",
+                "backend-a",
+                "backend-b",
+                "00000000-0000-0000-0000-000000000010",
+                "sig"
+        ));
     }
 
     private Clock fixedClock() {

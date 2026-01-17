@@ -50,7 +50,7 @@
 - [x] Implement prepare/auth/sync/freeze/cutover/resume/cleanup state machine.
 - [x] Add bounded buffers with global caps and rollback logic.
 - [x] Add migration metrics and failure reason tracking.
-- [ ] Add safety: disable migration if ticket invalid or missing.
+- [x] Add safety: disable migration if ticket invalid or missing.
 
 ## Backend agent (optional)
 - [ ] Implement referral signer plugin in server context.

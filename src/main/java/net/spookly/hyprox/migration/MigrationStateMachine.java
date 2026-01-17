@@ -21,6 +21,8 @@ public final class MigrationStateMachine {
     private static final String ERROR_CLIENT_UUID_REQUIRED = "migration client uuid is required";
     private static final String ERROR_SOURCE_REQUIRED = "migration source backend id is required";
     private static final String ERROR_TARGET_REQUIRED = "migration target backend id is required";
+    private static final String ERROR_TICKET_MISSING = "migration ticket missing";
+    private static final String ERROR_TICKET_INVALID = "migration ticket invalid";
     private static final String ERROR_CANNOT_RESET = "migration cannot reset from active state";
     private static final String ERROR_PREPARE_TIMEOUT = "migration prepare timeout";
     private static final String ERROR_CUTOVER_TIMEOUT = "migration cutover timeout";
@@ -37,6 +39,10 @@ public final class MigrationStateMachine {
      * Whether migration is enabled in config.
      */
     private final boolean enabled;
+    /**
+     * Whether a verified migration ticket is required to start.
+     */
+    private final boolean ticketRequired;
     /**
      * Timeout in milliseconds for the prepare/auth/sync stages.
      */
@@ -91,6 +97,7 @@ public final class MigrationStateMachine {
         this.clock = clock == null ? Clock.systemUTC() : clock;
         HyproxConfig.MigrationConfig migration = config.migration;
         this.enabled = migration != null && Boolean.TRUE.equals(migration.enabled);
+        this.ticketRequired = migration != null && Boolean.TRUE.equals(migration.ticketRequired);
         this.prepareTimeoutMs = normalizeTimeout(migration == null ? null : migration.prepareTimeoutMs);
         this.cutoverTimeoutMs = normalizeTimeout(migration == null ? null : migration.cutoverTimeoutMs);
     }
@@ -131,6 +138,37 @@ public final class MigrationStateMachine {
      * Start a new migration attempt from backend A to backend B.
      */
     public TransitionResult start(MigrationContext context) {
+        return start(context, null);
+    }
+
+    /**
+     * Start a new migration attempt from backend A to backend B with a verified ticket.
+     */
+    public TransitionResult start(MigrationContext context, MigrationTicketService.VerifyResult ticketResult) {
+        TransitionResult validation = validateStart(context);
+        if (validation != null) {
+            return validation;
+        }
+        String ticketError = ticketRequired ? validateTicket(ticketResult) : null;
+        if (ticketError != null) {
+            return TransitionResult.error(phase, ticketError);
+        }
+        return startInternal(context);
+    }
+
+    private TransitionResult startInternal(MigrationContext context) {
+        Instant now = clock.instant();
+        this.context = context;
+        this.phase = MigrationPhase.PREPARE;
+        this.startedAt = now;
+        this.phaseStartedAt = now;
+        this.prepareDeadline = deadlineFor(prepareTimeoutMs, now);
+        this.cutoverDeadline = null;
+        this.failureReason = null;
+        return TransitionResult.ok(phase);
+    }
+
+    private TransitionResult validateStart(MigrationContext context) {
         if (!enabled) {
             return TransitionResult.error(phase, ERROR_DISABLED);
         }
@@ -152,15 +190,7 @@ public final class MigrationStateMachine {
         if (isBlank(context.targetBackendId())) {
             return TransitionResult.error(phase, ERROR_TARGET_REQUIRED);
         }
-        Instant now = clock.instant();
-        this.context = context;
-        this.phase = MigrationPhase.PREPARE;
-        this.startedAt = now;
-        this.phaseStartedAt = now;
-        this.prepareDeadline = deadlineFor(prepareTimeoutMs, now);
-        this.cutoverDeadline = null;
-        this.failureReason = null;
-        return TransitionResult.ok(phase);
+        return null;
     }
 
     /**
@@ -354,6 +384,22 @@ public final class MigrationStateMachine {
             return "migration failed";
         }
         return reason.trim();
+    }
+
+    private String validateTicket(MigrationTicketService.VerifyResult ticketResult) {
+        if (ticketResult == null) {
+            return ERROR_TICKET_MISSING;
+        }
+        if (!ticketResult.ok()) {
+            if (isBlank(ticketResult.error())) {
+                return ERROR_TICKET_MISSING;
+            }
+            return ticketResult.error();
+        }
+        if (ticketResult.ticket() == null) {
+            return ERROR_TICKET_INVALID;
+        }
+        return null;
     }
 
     private boolean isBlank(String value) {
