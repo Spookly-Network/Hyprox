@@ -20,7 +20,12 @@ class RoutingPlannerTest {
         config.routing.pools = new LinkedHashMap<>();
         config.routing.pools.put("game", pool("weighted", backend("game-1")));
 
-        RoutingService routingService = new RoutingService(config, BackendRegistry.fromConfig(config));
+        RoutingService routingService = new RoutingService(
+                config,
+                BackendRegistry.fromConfig(config),
+                new BackendCapacityTracker(),
+                new BackendHealthTracker()
+        );
         RoutingPlanner planner = new RoutingPlanner(routingService, new PathSelector(config));
 
         RoutingDecision decision = planner.decide(new RoutingRequest("game", null));

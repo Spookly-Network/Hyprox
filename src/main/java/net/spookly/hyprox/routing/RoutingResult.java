@@ -13,5 +13,6 @@ import lombok.experimental.Accessors;
 public final class RoutingResult {
     private final String pool;
     private final BackendTarget backend;
+    private final BackendReservation reservation;
     private final String reason;
 }

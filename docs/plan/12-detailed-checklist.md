@@ -13,10 +13,10 @@
 - [x] Implement handshake timeout cleanup for half-open streams.
 
 ## Routing and pools
-- [ ] Add pool capacity tracking and reject when `maxPlayers` exceeded.
-- [ ] Add pool health scoring (passive failures + optional active ping).
+- [x] Add pool capacity tracking and reject when `maxPlayers` exceeded.
+- [x] Add pool health scoring (passive failures + optional active ping).
 - [ ] Add consistent backend selection when weights change.
-- [ ] Persist routing decision reason for metrics/logging.
+- [x] Persist routing decision reason for metrics/logging.
 
 ## Referral payloads
 - [ ] Define referral envelope schema (keyId, issuedAt, ttl, nonce, targetBackendId, clientUuid).

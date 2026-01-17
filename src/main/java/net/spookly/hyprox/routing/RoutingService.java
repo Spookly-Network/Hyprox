@@ -20,11 +20,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 public final class RoutingService {
     private final HyproxConfig config;
     private final BackendRegistry registry;
+    private final BackendCapacityTracker capacityTracker;
+    private final BackendHealthTracker healthTracker;
     private final Map<String, AtomicInteger> roundRobinCounters = new ConcurrentHashMap<>();
 
-    public RoutingService(HyproxConfig config, BackendRegistry registry) {
+    public RoutingService(HyproxConfig config,
+                          BackendRegistry registry,
+                          BackendCapacityTracker capacityTracker,
+                          BackendHealthTracker healthTracker) {
         this.config = Objects.requireNonNull(config, "config");
         this.registry = registry;
+        this.capacityTracker = capacityTracker;
+        this.healthTracker = healthTracker;
     }
 
     /**
@@ -33,17 +40,23 @@ public final class RoutingService {
     public RoutingResult route(RoutingRequest request) {
         String pool = selectPool(request);
         if (isBlank(pool)) {
-            return new RoutingResult(null, null, "no_pool");
+            return new RoutingResult(null, null, null, "no_pool");
         }
         List<BackendTarget> candidates = listBackends(pool, false);
         if (candidates.isEmpty()) {
-            return new RoutingResult(pool, null, "no_backends");
+            return new RoutingResult(pool, null, null, "no_backends");
         }
-        BackendTarget backend = selectBackend(pool, candidates);
-        if (backend == null) {
-            return new RoutingResult(pool, null, "no_backends");
+        List<BackendTarget> healthyCandidates = filterHealthy(candidates);
+        boolean hasHealthy = healthTracker != null && !healthyCandidates.isEmpty();
+        List<BackendTarget> selection = hasHealthy ? healthyCandidates : candidates;
+        BackendReservation reservation = selectBackend(pool, selection, hasHealthy);
+        if (reservation == null && hasHealthy && healthyCandidates.size() < candidates.size()) {
+            reservation = selectBackend(pool, candidates, false);
         }
-        return new RoutingResult(pool, backend, "selected");
+        if (reservation == null) {
+            return new RoutingResult(pool, null, null, "pool_full");
+        }
+        return new RoutingResult(pool, reservation.backend(), reservation, "selected");
     }
 
     /**
@@ -114,7 +127,8 @@ public final class RoutingService {
         return true;
     }
 
-    private BackendTarget selectBackend(String pool, List<BackendTarget> candidates) {
+    private BackendReservation selectBackend(String pool, List<BackendTarget> candidates, boolean applyHealth) {
+        List<BackendTarget> remaining = new ArrayList<>(candidates);
         PoolPolicy policy = PoolPolicy.WEIGHTED;
         if (config.routing != null && config.routing.pools != null) {
             HyproxConfig.PoolConfig poolConfig = config.routing.pools.get(pool);
@@ -122,10 +136,20 @@ public final class RoutingService {
                 policy = PoolPolicy.fromConfig(poolConfig.policy);
             }
         }
-        if (policy == PoolPolicy.ROUND_ROBIN) {
-            return selectRoundRobin(pool, candidates);
+        while (!remaining.isEmpty()) {
+            BackendTarget candidate = policy == PoolPolicy.ROUND_ROBIN
+                    ? selectRoundRobin(pool, remaining)
+                    : selectWeighted(remaining, applyHealth);
+            if (candidate == null) {
+                return null;
+            }
+            BackendReservation reservation = tryReserve(candidate);
+            if (reservation != null) {
+                return reservation;
+            }
+            remaining.remove(candidate);
         }
-        return selectWeighted(candidates);
+        return null;
     }
 
     private BackendTarget selectRoundRobin(String pool, List<BackendTarget> candidates) {
@@ -137,23 +161,60 @@ public final class RoutingService {
         return candidates.get(index);
     }
 
-    private BackendTarget selectWeighted(List<BackendTarget> candidates) {
+    private BackendTarget selectWeighted(List<BackendTarget> candidates, boolean applyHealth) {
         if (candidates.isEmpty()) {
             return null;
         }
         int totalWeight = 0;
         for (BackendTarget candidate : candidates) {
-            totalWeight += Math.max(1, candidate.weight());
+            totalWeight += weightFor(candidate, applyHealth);
+        }
+        if (totalWeight <= 0) {
+            return null;
         }
         int target = ThreadLocalRandom.current().nextInt(totalWeight);
         int running = 0;
         for (BackendTarget candidate : candidates) {
-            running += Math.max(1, candidate.weight());
+            int weight = weightFor(candidate, applyHealth);
+            if (weight <= 0) {
+                continue;
+            }
+            running += weight;
             if (target < running) {
                 return candidate;
             }
         }
         return candidates.get(candidates.size() - 1);
+    }
+
+    private BackendReservation tryReserve(BackendTarget candidate) {
+        if (capacityTracker == null) {
+            return BackendReservation.unlimited(candidate);
+        }
+        return capacityTracker.tryReserve(candidate);
+    }
+
+    private List<BackendTarget> filterHealthy(List<BackendTarget> candidates) {
+        if (healthTracker == null || candidates.isEmpty()) {
+            return candidates;
+        }
+        List<BackendTarget> healthy = new ArrayList<>();
+        for (BackendTarget candidate : candidates) {
+            if (healthTracker.isHealthy(candidate)) {
+                healthy.add(candidate);
+            }
+        }
+        return healthy;
+    }
+
+    private int weightFor(BackendTarget candidate, boolean applyHealth) {
+        int baseWeight = Math.max(1, candidate.weight());
+        if (!applyHealth || healthTracker == null) {
+            return baseWeight;
+        }
+        int score = healthTracker.score(candidate);
+        int adjusted = (baseWeight * score) / 100;
+        return Math.max(1, adjusted);
     }
 
     private BackendTarget fromStatic(String pool, HyproxConfig.BackendConfig backend) {

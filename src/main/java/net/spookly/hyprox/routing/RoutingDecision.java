@@ -13,6 +13,7 @@ import lombok.experimental.Accessors;
 public final class RoutingDecision {
     private final String pool;
     private final BackendTarget backend;
+    private final BackendReservation reservation;
     private final DataPath dataPath;
     private final String reason;
 }

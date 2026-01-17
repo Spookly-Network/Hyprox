@@ -12,6 +12,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class RoutingServiceTest {
     @Test
@@ -20,7 +21,7 @@ class RoutingServiceTest {
         config.routing.rules = List.of(rule("editor", null, "edit"));
         config.routing.pools.put("edit", pool("weighted", backend("edit-1")));
 
-        RoutingService service = new RoutingService(config, null);
+        RoutingService service = new RoutingService(config, null, new BackendCapacityTracker(), new BackendHealthTracker());
         RoutingResult result = service.route(new RoutingRequest("editor", null));
 
         assertEquals("edit", result.pool());
@@ -34,7 +35,7 @@ class RoutingServiceTest {
         config.routing.rules = List.of(rule("editor", null, "edit"));
         config.routing.pools.put("edit", pool("weighted", backend("edit-1")));
 
-        RoutingService service = new RoutingService(config, null);
+        RoutingService service = new RoutingService(config, null, new BackendCapacityTracker(), new BackendHealthTracker());
         RoutingResult result = service.route(new RoutingRequest("game", null));
 
         assertEquals("lobby", result.pool());
@@ -47,7 +48,7 @@ class RoutingServiceTest {
         HyproxConfig config = baseConfig();
         config.routing.pools.put("lobby", pool("round_robin", backend("lobby-1"), backend("lobby-2")));
 
-        RoutingService service = new RoutingService(config, null);
+        RoutingService service = new RoutingService(config, null, new BackendCapacityTracker(), new BackendHealthTracker());
         RoutingResult first = service.route(new RoutingRequest("game", null));
         RoutingResult second = service.route(new RoutingRequest("game", null));
         RoutingResult third = service.route(new RoutingRequest("game", null));
@@ -61,7 +62,7 @@ class RoutingServiceTest {
     void drainingDynamicBackendsExcludedByDefault() {
         HyproxConfig config = baseConfig();
         BackendRegistry registry = BackendRegistry.fromConfig(config);
-        RoutingService service = new RoutingService(config, registry);
+        RoutingService service = new RoutingService(config, registry, new BackendCapacityTracker(), new BackendHealthTracker());
 
         RegisteredBackend backend = new RegisteredBackend(
                 "dyn-1",
@@ -82,6 +83,47 @@ class RoutingServiceTest {
         List<BackendTarget> candidates = service.listBackends("lobby", false);
         assertEquals(1, candidates.size());
         assertEquals("lobby-1", candidates.get(0).id());
+    }
+
+    @Test
+    void rejectsWhenPoolAtCapacity() {
+        HyproxConfig config = baseConfig();
+        HyproxConfig.BackendConfig backend = backend("lobby-1");
+        backend.maxPlayers = 1;
+        config.routing.pools.put("lobby", pool("round_robin", backend));
+
+        BackendCapacityTracker tracker = new BackendCapacityTracker();
+        RoutingService service = new RoutingService(config, null, tracker, new BackendHealthTracker());
+
+        RoutingResult first = service.route(new RoutingRequest("game", null));
+        RoutingResult second = service.route(new RoutingRequest("game", null));
+
+        assertNotNull(first.backend());
+        assertNotNull(first.reservation());
+        assertNull(second.backend());
+        assertEquals("pool_full", second.reason());
+
+        first.reservation().release();
+        RoutingResult third = service.route(new RoutingRequest("game", null));
+        assertNotNull(third.backend());
+        third.reservation().release();
+    }
+
+    @Test
+    void avoidsUnhealthyBackendsWhenPossible() {
+        HyproxConfig config = baseConfig();
+        config.routing.pools.put("lobby", pool("round_robin", backend("lobby-1"), backend("lobby-2")));
+        BackendHealthTracker healthTracker = new BackendHealthTracker();
+        BackendTarget unhealthy = backendTarget("lobby-1");
+        healthTracker.recordPassiveFailure(unhealthy);
+        healthTracker.recordPassiveFailure(unhealthy);
+        healthTracker.recordPassiveFailure(unhealthy);
+
+        RoutingService service = new RoutingService(config, null, new BackendCapacityTracker(), healthTracker);
+        RoutingResult result = service.route(new RoutingRequest("game", null));
+
+        assertNotNull(result.backend());
+        assertEquals("lobby-2", result.backend().id());
     }
 
     private HyproxConfig baseConfig() {
@@ -121,5 +163,19 @@ class RoutingServiceTest {
         backend.maxPlayers = 150;
         backend.tags = List.of("static");
         return backend;
+    }
+
+    private BackendTarget backendTarget(String id) {
+        return new BackendTarget(
+                id,
+                "lobby",
+                "10.0.0.1",
+                9000,
+                1,
+                150,
+                List.of("static"),
+                BackendSource.STATIC,
+                false
+        );
     }
 }

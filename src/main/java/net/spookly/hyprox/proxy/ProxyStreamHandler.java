@@ -15,6 +15,7 @@ import io.netty.handler.codec.quic.QuicChannel;
 import io.netty.handler.timeout.ReadTimeoutException;
 import net.spookly.hyprox.config.HyproxConfig;
 import net.spookly.hyprox.routing.BackendTarget;
+import net.spookly.hyprox.routing.BackendReservation;
 import net.spookly.hyprox.routing.DataPath;
 import net.spookly.hyprox.routing.RoutingDecision;
 import net.spookly.hyprox.routing.RoutingPlanner;
@@ -38,6 +39,7 @@ public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet
     private boolean handled;
     private boolean sessionTracked;
     private String remoteAddress;
+    private BackendReservation backendReservation;
 
     public ProxyStreamHandler(HyproxConfig config, RoutingPlanner routingPlanner, ProxySessionLimiter sessionLimiter) {
         Objects.requireNonNull(config, "config");
@@ -62,6 +64,8 @@ public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet
         }
         Connect connect = (Connect) msg;
         RoutingDecision decision = routingPlanner.decide(toRequest(connect));
+        storeRoutingContext(ctx, decision);
+        backendReservation = decision.reservation();
         BackendTarget backend = decision.backend();
         if (backend == null) {
             String reason = decision.reason() == null ? "no backend available" : "routing failed: " + decision.reason();
@@ -69,6 +73,7 @@ public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet
             return;
         }
         if (decision.dataPath() == DataPath.FULL_PROXY) {
+            releaseReservation();
             sendDisconnect(ctx, "full proxy path not yet enabled", DisconnectType.Disconnect);
             return;
         }
@@ -101,6 +106,7 @@ public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet
         if (sessionTracked) {
             sessionLimiter.releaseSession(remoteAddress);
         }
+        releaseReservation();
         ctx.fireChannelInactive();
     }
 
@@ -126,6 +132,7 @@ public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet
 
     private void sendReferral(ChannelHandlerContext ctx, BackendTarget backend) {
         if (backend.port() <= 0 || backend.port() > 65535) {
+            releaseReservation();
             sendDisconnect(ctx, "invalid backend port", DisconnectType.Disconnect);
             return;
         }
@@ -140,8 +147,8 @@ public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet
     }
 
     private void ensureSessionContext(ChannelHandlerContext ctx) {
-        Channel contextChannel = ctx.channel().parent() == null ? ctx.channel() : ctx.channel().parent();
-        if (contextChannel.attr(ProxySessionContext.SESSION_CONTEXT).get() != null) {
+        Channel contextChannel = resolveContextChannel(ctx);
+        if (contextChannel == null || contextChannel.attr(ProxySessionContext.SESSION_CONTEXT).get() != null) {
             return;
         }
         X509Certificate certificate = resolveClientCertificate(contextChannel);
@@ -195,6 +202,26 @@ public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet
     private void clearHandshakeTimeout(ChannelHandlerContext ctx) {
         if (ctx.pipeline().get("handshakeTimeout") != null) {
             ctx.pipeline().remove("handshakeTimeout");
+        }
+    }
+
+    private void storeRoutingContext(ChannelHandlerContext ctx, RoutingDecision decision) {
+        Channel contextChannel = resolveContextChannel(ctx);
+        if (contextChannel == null) {
+            return;
+        }
+        contextChannel.attr(RoutingDecisionContext.ROUTING_CONTEXT).set(RoutingDecisionContext.from(decision));
+    }
+
+    private Channel resolveContextChannel(ChannelHandlerContext ctx) {
+        Channel channel = ctx.channel();
+        return channel.parent() == null ? channel : channel.parent();
+    }
+
+    private void releaseReservation() {
+        if (backendReservation != null) {
+            backendReservation.release();
+            backendReservation = null;
         }
     }
 }

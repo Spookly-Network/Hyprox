@@ -20,6 +20,6 @@ public final class RoutingPlanner {
     public RoutingDecision decide(RoutingRequest request) {
         RoutingResult result = routingService.route(request);
         DataPath path = pathSelector.select(result.pool());
-        return new RoutingDecision(result.pool(), result.backend(), path, result.reason());
+        return new RoutingDecision(result.pool(), result.backend(), result.reservation(), path, result.reason());
     }
 }

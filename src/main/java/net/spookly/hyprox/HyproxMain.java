@@ -9,6 +9,8 @@ import net.spookly.hyprox.registry.BackendRegistry;
 import net.spookly.hyprox.registry.RegistryAuditLogger;
 import net.spookly.hyprox.registry.RegistryEventListener;
 import net.spookly.hyprox.registry.RegistryServer;
+import net.spookly.hyprox.routing.BackendCapacityTracker;
+import net.spookly.hyprox.routing.BackendHealthTracker;
 import net.spookly.hyprox.routing.PathSelector;
 import net.spookly.hyprox.routing.RoutingPlanner;
 import net.spookly.hyprox.routing.RoutingService;
@@ -50,7 +52,9 @@ public final class HyproxMain {
             eventListener = RegistryAuditLogger.INSTANCE;
         }
         BackendRegistry registry = BackendRegistry.fromConfig(config, eventListener);
-        RoutingService routingService = new RoutingService(config, registry);
+        BackendCapacityTracker capacityTracker = new BackendCapacityTracker();
+        BackendHealthTracker healthTracker = new BackendHealthTracker();
+        RoutingService routingService = new RoutingService(config, registry, capacityTracker, healthTracker);
         RoutingPlanner routingPlanner = new RoutingPlanner(routingService, new PathSelector(config));
         ProxyServer proxyServer = new ProxyServer(config, routingPlanner);
         proxyServer.start();
