@@ -17,6 +17,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Base64;
@@ -141,7 +142,7 @@ public final class ReferralService {
         ReferralEnvelope envelope;
         try {
             envelope = MAPPER.readValue(payload, ReferralEnvelope.class);
-        } catch (JsonProcessingException e) {
+        } catch (IOException e) {
             return VerifyResult.error("referral payload is not valid JSON");
         }
         if (isBlank(envelope.keyId())
