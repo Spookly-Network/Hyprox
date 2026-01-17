@@ -73,6 +73,7 @@
 - [x] Unit tests for routing, selection, referral signing/verification.
 - [x] Unit tests for registry validation (allowlists, TTL, drain).
 - [x] Integration tests for redirect/referral paths.
+- [x] Integration tests for registry-driven routing.
 - [ ] Integration tests for full-proxy forwarding (mock backend).
 - [x] Integration tests for migration state machine and rollback.
 - [ ] Load tests for concurrent sessions and buffer limits.
@@ -82,4 +83,4 @@
 - [x] Document registry usage for orchestrators (examples + curl).
 - [x] Add troubleshooting guide for common disconnects and TLS errors.
 - [x] Add usage/setup docs explaining config fields.
-- [ ] Add release checklist and versioning notes.
+- [x] Add release checklist and versioning notes.
