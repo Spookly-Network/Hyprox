@@ -1,8 +1,6 @@
 package net.spookly.hyprox.proxy;
 
 import io.netty.channel.Channel;
-import io.netty.handler.codec.quic.QuicChannel;
-import io.netty.handler.codec.quic.QuicStreamChannel;
 import net.spookly.hyprox.routing.BackendTarget;
 
 import java.util.Objects;
@@ -14,14 +12,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public final class BackendConnection {
     private final BackendTarget backend;
     private final Channel datagramChannel;
-    private final QuicChannel quicChannel;
-    private final QuicStreamChannel streamChannel;
+    private final Channel quicChannel;
+    private final Channel streamChannel;
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
     public BackendConnection(BackendTarget backend,
                              Channel datagramChannel,
-                             QuicChannel quicChannel,
-                             QuicStreamChannel streamChannel) {
+                             Channel quicChannel,
+                             Channel streamChannel) {
         this.backend = Objects.requireNonNull(backend, "backend");
         this.datagramChannel = Objects.requireNonNull(datagramChannel, "datagramChannel");
         this.quicChannel = Objects.requireNonNull(quicChannel, "quicChannel");
@@ -33,7 +31,7 @@ public final class BackendConnection {
         return backend;
     }
 
-    public QuicStreamChannel streamChannel() {
+    public Channel streamChannel() {
         return streamChannel;
     }
 

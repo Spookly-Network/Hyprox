@@ -74,7 +74,7 @@
 - [x] Unit tests for registry validation (allowlists, TTL, drain).
 - [x] Integration tests for redirect/referral paths.
 - [x] Integration tests for registry-driven routing.
-- [ ] Integration tests for full-proxy forwarding (mock backend).
+- [x] Integration tests for full-proxy forwarding (mock backend).
 - [x] Integration tests for migration state machine and rollback.
 - [ ] Load tests for concurrent sessions and buffer limits.
 
