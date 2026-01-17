@@ -44,3 +44,9 @@ spotless {
 test {
     useJUnitPlatform()
 }
+
+tasks.register('copyRuntimeDependencies', Copy) {
+    from configurations.runtimeClasspath
+    into "$buildDir/runtime"
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}

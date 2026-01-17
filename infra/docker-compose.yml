@@ -1,0 +1,14 @@
+version: "3.8"
+
+services:
+  hyprox:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    ports:
+      - "20000:20000"
+    volumes:
+      - ../config:/config:ro
+    command:
+      - --config
+      - /config/hyprox.yaml
