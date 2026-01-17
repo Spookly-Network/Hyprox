@@ -1,6 +1,8 @@
 package net.spookly.hyprox.proxy;
 
 import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.packets.auth.AuthToken;
+import com.hypixel.hytale.protocol.packets.auth.ServerAuthToken;
 import com.hypixel.hytale.protocol.packets.connection.Disconnect;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -17,15 +19,21 @@ public final class PacketForwardingHandler extends SimpleChannelInboundHandler<P
     private final ProxyBridgeSession session;
     private final ProxyDataPathMetrics metrics;
     private final ForwardDirection direction;
+    private final ProxyAuthSession authSession;
+    private final boolean captureTokens;
 
     public PacketForwardingHandler(Channel outboundChannel,
                                    ProxyBridgeSession session,
                                    ProxyDataPathMetrics metrics,
-                                   ForwardDirection direction) {
+                                   ForwardDirection direction,
+                                   ProxyAuthSession authSession,
+                                   boolean captureTokens) {
         this.outboundChannel = Objects.requireNonNull(outboundChannel, "outboundChannel");
         this.session = Objects.requireNonNull(session, "session");
         this.metrics = Objects.requireNonNull(metrics, "metrics");
         this.direction = Objects.requireNonNull(direction, "direction");
+        this.authSession = authSession;
+        this.captureTokens = captureTokens;
     }
 
     @Override
@@ -34,6 +42,7 @@ public final class PacketForwardingHandler extends SimpleChannelInboundHandler<P
             session.close();
             return;
         }
+        captureAuthPacket(msg);
         if (msg instanceof Disconnect) {
             forwardDisconnect(msg);
             return;
@@ -67,6 +76,21 @@ public final class PacketForwardingHandler extends SimpleChannelInboundHandler<P
             metrics.recordClientToBackendPacket();
         } else {
             metrics.recordBackendToClientPacket();
+        }
+    }
+
+    private void captureAuthPacket(Packet msg) {
+        if (!captureTokens || authSession == null) {
+            return;
+        }
+        if (msg instanceof AuthToken) {
+            AuthToken authToken = (AuthToken) msg;
+            authSession.captureAuthToken(authToken.accessToken, authToken.serverAuthorizationGrant);
+            return;
+        }
+        if (msg instanceof ServerAuthToken) {
+            ServerAuthToken serverAuthToken = (ServerAuthToken) msg;
+            authSession.captureServerAccessToken(serverAuthToken.serverAccessToken);
         }
     }
 

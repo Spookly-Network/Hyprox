@@ -5,6 +5,7 @@ import com.hypixel.hytale.protocol.Packet;
 import com.hypixel.hytale.protocol.io.netty.PacketDecoder;
 import com.hypixel.hytale.protocol.io.netty.PacketEncoder;
 import com.hypixel.hytale.protocol.io.netty.ProtocolUtil;
+import com.hypixel.hytale.protocol.packets.auth.AuthToken;
 import com.hypixel.hytale.protocol.packets.auth.ClientReferral;
 import com.hypixel.hytale.protocol.packets.connection.ClientType;
 import com.hypixel.hytale.protocol.packets.connection.Connect;
@@ -43,6 +44,11 @@ import java.util.Objects;
  * Handles the initial client handshake and routes to referral or full proxy paths.
  */
 public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet> {
+    private static final int MAX_PROTOCOL_HASH_LENGTH = 64;
+    private static final String EXPECTED_PROTOCOL_HASH =
+            "6708f121966c1c443f4b0eb525b2f81d0a8dc61f5003a692a8fa157e5e02cea9";
+
+    private final HyproxConfig config;
     private final RoutingPlanner routingPlanner;
     private final ProxySessionLimiter sessionLimiter;
     private final ReferralService referralService;
@@ -56,13 +62,14 @@ public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet
     private boolean forwardingEnabled;
     private boolean bufferingEnabled;
     private final Deque<Packet> pendingPackets = new ArrayDeque<>();
+    private ProxyAuthSession authSession;
 
     public ProxyStreamHandler(HyproxConfig config,
                               RoutingPlanner routingPlanner,
                               ProxySessionLimiter sessionLimiter,
                               ReferralService referralService,
                               BackendConnector backendConnector) {
-        Objects.requireNonNull(config, "config");
+        this.config = Objects.requireNonNull(config, "config");
         this.routingPlanner = Objects.requireNonNull(routingPlanner, "routingPlanner");
         this.sessionLimiter = Objects.requireNonNull(sessionLimiter, "sessionLimiter");
         this.referralService = Objects.requireNonNull(referralService, "referralService");
@@ -91,6 +98,13 @@ public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet
             return;
         }
         Connect connect = (Connect) msg;
+        if (!validateProtocolHash(ctx, connect)) {
+            return;
+        }
+        authSession = ensureAuthSession(ctx);
+        if (authSession != null) {
+            authSession.captureIdentityToken(connect.identityToken);
+        }
         RoutingDecision decision = routingPlanner.decide(toRequest(ctx, connect));
         storeRoutingContext(ctx, decision);
         backendReservation = decision.reservation();
@@ -141,6 +155,7 @@ public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet
             bridgeSession.close();
         }
         clearPendingPackets();
+        clearAuthSession(ctx);
         releaseReservation();
         ctx.fireChannelInactive();
     }
@@ -284,7 +299,9 @@ public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet
                     clientChannel,
                     bridgeSession,
                     dataPathMetrics,
-                    PacketForwardingHandler.ForwardDirection.BACKEND_TO_CLIENT
+                    PacketForwardingHandler.ForwardDirection.BACKEND_TO_CLIENT,
+                    authSession,
+                    isTerminateAuth()
             ));
         }
     }
@@ -296,7 +313,9 @@ public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet
                     connection.streamChannel(),
                     bridgeSession,
                     dataPathMetrics,
-                    PacketForwardingHandler.ForwardDirection.CLIENT_TO_BACKEND
+                    PacketForwardingHandler.ForwardDirection.CLIENT_TO_BACKEND,
+                    authSession,
+                    isTerminateAuth()
             ));
         }
     }
@@ -311,6 +330,7 @@ public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet
     }
 
     private void queuePendingPacket(Packet packet) {
+        captureAuthPacket(packet);
         ReferenceCountUtil.retain(packet);
         pendingPackets.add(packet);
     }
@@ -427,6 +447,66 @@ public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet
             backendReservation.release();
             backendReservation = null;
         }
+    }
+
+    private boolean validateProtocolHash(ChannelHandlerContext ctx, Connect connect) {
+        String protocolHash = connect.protocolHash;
+        if (protocolHash == null || protocolHash.trim().isEmpty()) {
+            sendDisconnect(ctx, "missing protocol hash", DisconnectType.Disconnect);
+            return false;
+        }
+        if (protocolHash.length() > MAX_PROTOCOL_HASH_LENGTH) {
+            sendDisconnect(ctx, "protocol hash too long", DisconnectType.Disconnect);
+            return false;
+        }
+        if (!EXPECTED_PROTOCOL_HASH.equals(protocolHash)) {
+            sendDisconnect(ctx, "protocol hash mismatch", DisconnectType.Disconnect);
+            return false;
+        }
+        return true;
+    }
+
+    private ProxyAuthSession ensureAuthSession(ChannelHandlerContext ctx) {
+        if (!isTerminateAuth()) {
+            return null;
+        }
+        Channel contextChannel = resolveContextChannel(ctx);
+        if (contextChannel == null) {
+            return null;
+        }
+        ProxyAuthSession session = contextChannel.attr(ProxyAuthSession.AUTH_SESSION).get();
+        if (session == null) {
+            session = new ProxyAuthSession();
+            contextChannel.attr(ProxyAuthSession.AUTH_SESSION).set(session);
+        }
+        return session;
+    }
+
+    private void clearAuthSession(ChannelHandlerContext ctx) {
+        Channel contextChannel = resolveContextChannel(ctx);
+        if (contextChannel == null) {
+            return;
+        }
+        ProxyAuthSession session = contextChannel.attr(ProxyAuthSession.AUTH_SESSION).get();
+        if (session != null) {
+            session.clearSensitive();
+        }
+        contextChannel.attr(ProxyAuthSession.AUTH_SESSION).set(null);
+        authSession = null;
+    }
+
+    private void captureAuthPacket(Packet packet) {
+        if (!isTerminateAuth() || authSession == null) {
+            return;
+        }
+        if (packet instanceof AuthToken) {
+            AuthToken authToken = (AuthToken) packet;
+            authSession.captureAuthToken(authToken.accessToken, authToken.serverAuthorizationGrant);
+        }
+    }
+
+    private boolean isTerminateAuth() {
+        return config.auth != null && "terminate".equalsIgnoreCase(config.auth.mode);
     }
 
     private boolean isBlank(String value) {

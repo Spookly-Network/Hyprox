@@ -40,10 +40,10 @@
 - [x] Add data-path metrics (bytes, packets, latency).
 
 ## Auth handling
-- [ ] Implement passthrough auth flow (no token modification).
-- [ ] Implement terminate mode with in-memory token storage only.
-- [ ] Add token redaction in logs and trace output.
-- [ ] Validate protocol hash and reject mismatches early.
+- [x] Implement passthrough auth flow (no token modification).
+- [x] Implement terminate mode with in-memory token storage only.
+- [x] Add token redaction in logs and trace output.
+- [x] Validate protocol hash and reject mismatches early.
 
 ## Seamless migration
 - [ ] Define migration ticket schema and signing rules.
