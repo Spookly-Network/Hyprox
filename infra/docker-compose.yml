@@ -8,7 +8,7 @@ services:
     ports:
       - "20000:20000"
     volumes:
-      - ../config:/config:ro
+      - ../config:/config
     command:
       - --config
       - /config/hyprox.yaml

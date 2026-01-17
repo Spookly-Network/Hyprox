@@ -19,8 +19,13 @@ FROM eclipse-temurin:25-jre
 
 WORKDIR /app
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY --from=build /app/hyprox.jar /app/hyprox.jar
 COPY --from=build /app/build/runtime /app/runtime
+COPY infra/entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
-ENTRYPOINT ["java", "-cp", "/app/hyprox.jar:/app/runtime/*", "net.spookly.hyprox.HyproxMain"]
-CMD ["--config", "/config/hyprox.yaml"]
+ENTRYPOINT ["/app/entrypoint.sh"]

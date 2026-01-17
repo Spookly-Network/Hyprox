@@ -11,7 +11,7 @@ This guide is for people who just want to get the proxy running.
 ## Option A: Docker (recommended)
 
 1) Open a terminal in the project root.
-2) Start the container once to generate a default config:
+2) Start the container once to generate a default config and self-signed certs:
    - `docker compose up --build`
 3) Stop the container after it creates `/config/hyprox.yaml`.
 4) Edit `config/hyprox.yaml`:
@@ -38,6 +38,7 @@ This guide is for people who just want to get the proxy running.
 ## Common setup notes
 
 - The first run writes a default config file and exits. Edit it before running again.
+- The container also generates a self-signed cert in `config/certs` if none exists.
 - `proxy.mode` controls how clients connect:
   - `redirect`: proxy only redirects clients to a backend.
   - `full`: proxy keeps a live connection and forwards packets.

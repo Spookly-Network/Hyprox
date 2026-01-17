@@ -21,5 +21,16 @@ docker run --rm -p 20000:20000 -v "$PWD/config:/config" hyprox:local --config /c
 ```
 
 Notes:
-- The container expects `config/hyprox.yaml` to exist in the mounted directory.
+- On first run, the container generates a self-signed cert in `/config/certs` and a default `hyprox.yaml`, then exits.
+- Edit `config/hyprox.yaml` and set `HYPROX_REFERRAL_HMAC` before running again.
 - Adjust the published ports to match `proxy.listen.port` and any registry or metrics ports you enable.
+
+Manual certificate creation (host):
+```
+mkdir -p config/certs
+openssl req -x509 -newkey rsa:2048 -nodes \
+  -keyout config/certs/proxy.key \
+  -out config/certs/proxy.crt \
+  -days 365 \
+  -subj "/CN=hyprox"
+```
