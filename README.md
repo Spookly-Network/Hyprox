@@ -1,4 +1,9 @@
-# Hyprox installation (plain language)
+# Hyprox
+[![License](https://img.shields.io/badge/license-Apache%20Licence%202.0-green)](LICENSE)
+![GitHub Release](https://img.shields.io/github/v/release/Spookly-Network/Hyprox)
+[![Discord](https://img.shields.io/discord/900708000900194314?label=Discord)](https://discord.gg/9bpxXyszCb)
+
+## Hyprox installation (plain language)
 
 This guide is for people who just want to get the proxy running.
 
@@ -45,6 +50,14 @@ This guide is for people who just want to get the proxy running.
   - `hybrid`: choose per pool (default path + `fullProxyPools`).
 - `auth.mode` defaults to `passthrough`. Use `terminate` only if you need token handling in the proxy.
 - The default config expects local backend ports; change them to your servers.
+
+## Do I need a server plugin?
+
+No. Hyprox runs as a standalone proxy and does not require a backend plugin to route traffic.
+Certificate exchange is manual today: generate a CA + certs and configure the proxy and backends to use them.
+
+An optional Hyprox agent stub is included for command registration. It is a placeholder for future features
+like referral signing and backend metadata publishing, and it does not handle cert exchange yet.
 
 ## Where to go next
 
