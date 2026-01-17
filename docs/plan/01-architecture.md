@@ -10,6 +10,7 @@ Components
 - Signs referral payloads (HMAC or signature).
 - Publishes health/metadata to proxy (player count, shard, map).
 - Triggers referrals for in-game transfers.
+- Status: stub only. It currently registers a command but does not sign referrals or exchange certs.
 
 3) control-plane (file-based config, optional service later)
 - Static pool definitions, weights, capacity.

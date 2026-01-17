@@ -164,6 +164,14 @@ The registry is an optional control plane for dynamic backend registration.
 
 For registry API usage and examples, see `docs/plan/13-registry-usage.md`.
 
+### Backend agent plugin (optional)
+
+Hyprox does not require a server-side plugin to route traffic. Certificate exchange is manual: generate a CA
+and certs, then configure the proxy and backends to trust those paths.
+
+This repo includes a small agent stub that only registers a command. It is a placeholder for future referral
+signing, backend metadata publishing, and in-game transfer commands.
+
 ## Suggested starting setups
 
 ### Simple redirect setup (easiest)
