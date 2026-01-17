@@ -5,6 +5,7 @@ This guide describes how to configure and run Hyprox, and explains the key confi
 ## Quick start
 
 1) Create `config/hyprox.yaml` from the schema in `docs/plan/10-config.md`.
+   - If the file is missing, Hyprox writes a default template and exits.
 2) Validate the config:
 ```
 ./gradlew run --args="--config config/hyprox.yaml --dry-run"

@@ -2,8 +2,10 @@ package net.spookly.hyprox.config;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,7 +26,8 @@ public final class ConfigLoader {
             throw new ConfigException("Config path is required");
         }
         if (!Files.exists(path)) {
-            throw new ConfigException("Config file does not exist: " + path);
+            writeDefaultConfig(path);
+            throw new ConfigException("Config file did not exist, generated default at: " + path);
         }
         Object raw;
         Yaml yaml = new Yaml();
@@ -45,5 +48,22 @@ public final class ConfigLoader {
         }
         ConfigValidator.validate(config);
         return config;
+    }
+
+    private static void writeDefaultConfig(Path path) {
+        try {
+            Path parent = path.getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
+            Files.writeString(
+                    path,
+                    ConfigDefaults.defaultYaml(),
+                    StandardCharsets.UTF_8,
+                    StandardOpenOption.CREATE_NEW
+            );
+        } catch (IOException e) {
+            throw new ConfigException("Failed to write default config: " + path, e);
+        }
     }
 }
