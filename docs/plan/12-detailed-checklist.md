@@ -72,7 +72,7 @@
 ## Testing
 - [x] Unit tests for routing, selection, referral signing/verification.
 - [x] Unit tests for registry validation (allowlists, TTL, drain).
-- [ ] Integration tests for redirect/referral paths.
+- [x] Integration tests for redirect/referral paths.
 - [ ] Integration tests for full-proxy forwarding (mock backend).
 - [ ] Integration tests for migration state machine and rollback.
 - [ ] Load tests for concurrent sessions and buffer limits.
