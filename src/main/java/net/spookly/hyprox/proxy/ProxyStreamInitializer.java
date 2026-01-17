@@ -22,15 +22,18 @@ public final class ProxyStreamInitializer extends ChannelInitializer<QuicStreamC
     private final RoutingPlanner routingPlanner;
     private final ProxySessionLimiter sessionLimiter;
     private final ReferralService referralService;
+    private final BackendConnector backendConnector;
 
     public ProxyStreamInitializer(HyproxConfig config,
                                   RoutingPlanner routingPlanner,
                                   ProxySessionLimiter sessionLimiter,
-                                  ReferralService referralService) {
+                                  ReferralService referralService,
+                                  BackendConnector backendConnector) {
         this.config = Objects.requireNonNull(config, "config");
         this.routingPlanner = Objects.requireNonNull(routingPlanner, "routingPlanner");
         this.sessionLimiter = Objects.requireNonNull(sessionLimiter, "sessionLimiter");
         this.referralService = Objects.requireNonNull(referralService, "referralService");
+        this.backendConnector = Objects.requireNonNull(backendConnector, "backendConnector");
     }
 
     @Override
@@ -42,6 +45,6 @@ public final class ProxyStreamInitializer extends ChannelInitializer<QuicStreamC
         pipeline.addLast("packetDecoder", new PacketDecoder());
         pipeline.addLast("packetEncoder", new PacketEncoder());
         pipeline.addLast("packetArrayEncoder", new PacketArrayEncoder());
-        pipeline.addLast("handler", new ProxyStreamHandler(config, routingPlanner, sessionLimiter, referralService));
+        pipeline.addLast("handler", new ProxyStreamHandler(config, routingPlanner, sessionLimiter, referralService, backendConnector));
     }
 }

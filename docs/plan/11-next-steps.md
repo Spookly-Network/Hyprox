@@ -1,7 +1,6 @@
 # Next steps
 
 - Implement referral payload signing/verification and validate referral data before routing.
-- Add full-proxy data path: backend QUIC connect, packet forwarding, and teardown.
 - Add basic proxy -> backend auth handling for passthrough and terminate modes.
 - Implement migration ticket flow and cutover state machine for seamless moves.
 - Wire optional active health probes into the routing health tracker.

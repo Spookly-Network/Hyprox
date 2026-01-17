@@ -33,11 +33,11 @@
 - [x] Emit registry audit events (add, heartbeat, drain, expire).
 
 ## Full proxy data path
-- [ ] Add backend QUIC client connector with mTLS and CA pinning.
-- [ ] Implement backend stream pipeline mirroring Hytale packet handlers.
-- [ ] Add packet forwarding (client <-> backend) with backpressure control.
-- [ ] Handle disconnect propagation and graceful close ordering.
-- [ ] Add data-path metrics (bytes, packets, latency).
+- [x] Add backend QUIC client connector with mTLS and CA pinning.
+- [x] Implement backend stream pipeline mirroring Hytale packet handlers.
+- [x] Add packet forwarding (client <-> backend) with backpressure control.
+- [x] Handle disconnect propagation and graceful close ordering.
+- [x] Add data-path metrics (bytes, packets, latency).
 
 ## Auth handling
 - [ ] Implement passthrough auth flow (no token modification).

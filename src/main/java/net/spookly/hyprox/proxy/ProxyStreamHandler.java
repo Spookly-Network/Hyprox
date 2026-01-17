@@ -2,17 +2,23 @@ package net.spookly.hyprox.proxy;
 
 import com.hypixel.hytale.protocol.HostAddress;
 import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.io.netty.PacketDecoder;
+import com.hypixel.hytale.protocol.io.netty.PacketEncoder;
 import com.hypixel.hytale.protocol.io.netty.ProtocolUtil;
 import com.hypixel.hytale.protocol.packets.auth.ClientReferral;
 import com.hypixel.hytale.protocol.packets.connection.ClientType;
 import com.hypixel.hytale.protocol.packets.connection.Connect;
 import com.hypixel.hytale.protocol.packets.connection.Disconnect;
 import com.hypixel.hytale.protocol.packets.connection.DisconnectType;
+import com.hypixel.hytale.server.core.io.netty.PacketArrayEncoder;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.quic.QuicChannel;
 import io.netty.handler.timeout.ReadTimeoutException;
+import io.netty.util.ReferenceCountUtil;
+import io.netty.util.concurrent.Future;
 import net.spookly.hyprox.auth.ReferralService;
 import net.spookly.hyprox.config.HyproxConfig;
 import net.spookly.hyprox.routing.BackendTarget;
@@ -28,34 +34,50 @@ import javax.net.ssl.SSLSession;
 import java.net.InetSocketAddress;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Locale;
 import java.util.Objects;
 
 /**
- * Handles the initial client handshake and issues referral redirects.
+ * Handles the initial client handshake and routes to referral or full proxy paths.
  */
 public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet> {
     private final RoutingPlanner routingPlanner;
     private final ProxySessionLimiter sessionLimiter;
     private final ReferralService referralService;
+    private final BackendConnector backendConnector;
     private boolean handled;
     private boolean sessionTracked;
     private String remoteAddress;
     private BackendReservation backendReservation;
+    private ProxyBridgeSession bridgeSession;
+    private ProxyDataPathMetrics dataPathMetrics;
+    private boolean forwardingEnabled;
+    private boolean bufferingEnabled;
+    private final Deque<Packet> pendingPackets = new ArrayDeque<>();
 
     public ProxyStreamHandler(HyproxConfig config,
                               RoutingPlanner routingPlanner,
                               ProxySessionLimiter sessionLimiter,
-                              ReferralService referralService) {
+                              ReferralService referralService,
+                              BackendConnector backendConnector) {
         Objects.requireNonNull(config, "config");
         this.routingPlanner = Objects.requireNonNull(routingPlanner, "routingPlanner");
         this.sessionLimiter = Objects.requireNonNull(sessionLimiter, "sessionLimiter");
         this.referralService = Objects.requireNonNull(referralService, "referralService");
+        this.backendConnector = Objects.requireNonNull(backendConnector, "backendConnector");
     }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Packet msg) {
         if (handled) {
+            if (forwardingEnabled) {
+                ReferenceCountUtil.retain(msg);
+                ctx.fireChannelRead(msg);
+            } else if (bufferingEnabled) {
+                queuePendingPacket(msg);
+            }
             return;
         }
         if (!(msg instanceof Connect)) {
@@ -79,8 +101,7 @@ public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet
             return;
         }
         if (decision.dataPath() == DataPath.FULL_PROXY) {
-            releaseReservation();
-            sendDisconnect(ctx, "full proxy path not yet enabled", DisconnectType.Disconnect);
+            startFullProxy(ctx, backend, connect);
             return;
         }
         sendReferral(ctx, backend, connect);
@@ -92,6 +113,10 @@ public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet
             sendDisconnect(ctx, "handshake timeout", DisconnectType.Disconnect);
             return;
         }
+        if (bridgeSession != null) {
+            bridgeSession.close();
+        }
+        clearPendingPackets();
         ProtocolUtil.closeApplicationConnection(ctx.channel());
     }
 
@@ -112,6 +137,10 @@ public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet
         if (sessionTracked) {
             sessionLimiter.releaseSession(remoteAddress);
         }
+        if (bridgeSession != null) {
+            bridgeSession.close();
+        }
+        clearPendingPackets();
         releaseReservation();
         ctx.fireChannelInactive();
     }
@@ -160,6 +189,149 @@ public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet
     private void sendDisconnect(ChannelHandlerContext ctx, String reason, DisconnectType type) {
         Disconnect disconnect = new Disconnect(reason, type);
         ctx.writeAndFlush(disconnect).addListener(ProtocolUtil.CLOSE_ON_COMPLETE);
+    }
+
+    private void sendDisconnect(Channel channel, String reason, DisconnectType type) {
+        Disconnect disconnect = new Disconnect(reason, type);
+        channel.writeAndFlush(disconnect).addListener(ProtocolUtil.CLOSE_ON_COMPLETE);
+    }
+
+    private void startFullProxy(ChannelHandlerContext ctx, BackendTarget backend, Connect connect) {
+        if (backend.port() <= 0 || backend.port() > 65535) {
+            releaseReservation();
+            sendDisconnect(ctx, "invalid backend port", DisconnectType.Disconnect);
+            return;
+        }
+        Channel clientChannel = ctx.channel();
+        clientChannel.config().setAutoRead(false);
+        bufferingEnabled = true;
+        long startNanos = System.nanoTime();
+        Future<BackendConnection> future = backendConnector.connect(backend);
+        future.addListener(connectFuture -> {
+            Channel channel = ctx.channel();
+            if (!connectFuture.isSuccess()) {
+                channel.eventLoop().execute(() -> handleBackendConnectFailure(channel));
+                return;
+            }
+            BackendConnection connection = (BackendConnection) connectFuture.getNow();
+            long latencyNanos = System.nanoTime() - startNanos;
+            channel.eventLoop().execute(() -> attachFullProxy(ctx, connection, connect, latencyNanos));
+        });
+    }
+
+    private void handleBackendConnectFailure(Channel channel) {
+        if (!channel.isActive()) {
+            bufferingEnabled = false;
+            clearPendingPackets();
+            releaseReservation();
+            return;
+        }
+        bufferingEnabled = false;
+        clearPendingPackets();
+        releaseReservation();
+        sendDisconnect(channel, "backend connection failed", DisconnectType.Disconnect);
+    }
+
+    private void attachFullProxy(ChannelHandlerContext ctx, BackendConnection connection, Connect connect, long latencyNanos) {
+        Channel clientChannel = ctx.channel();
+        if (!clientChannel.isActive()) {
+            bufferingEnabled = false;
+            clearPendingPackets();
+            connection.close();
+            releaseReservation();
+            return;
+        }
+        dataPathMetrics = new ProxyDataPathMetrics();
+        dataPathMetrics.recordBackendConnectLatencyNanos(latencyNanos);
+        bridgeSession = new ProxyBridgeSession(clientChannel, connection, backendReservation);
+        forwardingEnabled = true;
+        bufferingEnabled = false;
+        addTrafficMetrics(clientChannel);
+        setupBackendPipeline(connection, clientChannel);
+        addClientForwarder(ctx, connection);
+        installBackpressure(clientChannel, connection.streamChannel());
+        connection.streamChannel().writeAndFlush(connect).addListener(future -> {
+            if (!future.isSuccess()) {
+                bridgeSession.close();
+                clearPendingPackets();
+                return;
+            }
+            flushPendingPackets(connection.streamChannel());
+        });
+        clientChannel.config().setAutoRead(true);
+    }
+
+    private void addTrafficMetrics(Channel clientChannel) {
+        ChannelPipeline pipeline = clientChannel.pipeline();
+        if (pipeline.get("trafficMetrics") == null && dataPathMetrics != null) {
+            pipeline.addFirst("trafficMetrics", new TrafficMetricsHandler(dataPathMetrics, TrafficMetricsHandler.TrafficSide.CLIENT_STREAM));
+        }
+    }
+
+    private void setupBackendPipeline(BackendConnection connection, Channel clientChannel) {
+        ChannelPipeline pipeline = connection.streamChannel().pipeline();
+        if (pipeline.get("packetDecoder") == null) {
+            pipeline.addLast("packetDecoder", new PacketDecoder());
+        }
+        if (pipeline.get("packetEncoder") == null) {
+            pipeline.addLast("packetEncoder", new PacketEncoder());
+        }
+        if (pipeline.get("packetArrayEncoder") == null) {
+            pipeline.addLast("packetArrayEncoder", new PacketArrayEncoder());
+        }
+        if (pipeline.get("backendForwarder") == null) {
+            pipeline.addLast("backendForwarder", new PacketForwardingHandler(
+                    clientChannel,
+                    bridgeSession,
+                    dataPathMetrics,
+                    PacketForwardingHandler.ForwardDirection.BACKEND_TO_CLIENT
+            ));
+        }
+    }
+
+    private void addClientForwarder(ChannelHandlerContext ctx, BackendConnection connection) {
+        ChannelPipeline pipeline = ctx.channel().pipeline();
+        if (pipeline.get("clientForwarder") == null) {
+            pipeline.addLast("clientForwarder", new PacketForwardingHandler(
+                    connection.streamChannel(),
+                    bridgeSession,
+                    dataPathMetrics,
+                    PacketForwardingHandler.ForwardDirection.CLIENT_TO_BACKEND
+            ));
+        }
+    }
+
+    private void installBackpressure(Channel clientChannel, Channel backendChannel) {
+        if (backendChannel.pipeline().get("clientBackpressure") == null) {
+            backendChannel.pipeline().addLast("clientBackpressure", new BackpressureRelayHandler(clientChannel));
+        }
+        if (clientChannel.pipeline().get("backendBackpressure") == null) {
+            clientChannel.pipeline().addLast("backendBackpressure", new BackpressureRelayHandler(backendChannel));
+        }
+    }
+
+    private void queuePendingPacket(Packet packet) {
+        ReferenceCountUtil.retain(packet);
+        pendingPackets.add(packet);
+    }
+
+    private void flushPendingPackets(Channel backendChannel) {
+        while (!pendingPackets.isEmpty()) {
+            Packet packet = pendingPackets.poll();
+            backendChannel.write(packet).addListener(future -> {
+                ReferenceCountUtil.release(packet);
+                if (!future.isSuccess() && bridgeSession != null) {
+                    bridgeSession.close();
+                }
+            });
+        }
+        backendChannel.flush();
+    }
+
+    private void clearPendingPackets() {
+        while (!pendingPackets.isEmpty()) {
+            ReferenceCountUtil.release(pendingPackets.poll());
+        }
     }
 
     private void ensureSessionContext(ChannelHandlerContext ctx) {

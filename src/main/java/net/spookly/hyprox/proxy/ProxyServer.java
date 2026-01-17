@@ -29,6 +29,8 @@ public final class ProxyServer {
     private final ProxySessionLimiter sessionLimiter;
     private final ReferralService referralService;
     private EventLoopGroup workerGroup;
+    private EventLoopGroup backendGroup;
+    private BackendConnector backendConnector;
     private Channel channel;
 
     public ProxyServer(HyproxConfig config, RoutingPlanner routingPlanner, ReferralService referralService) {
@@ -53,9 +55,11 @@ public final class ProxyServer {
         HyproxConfig.ProxyConfig proxy = config.proxy;
         HyproxConfig.QuicConfig quic = proxy.quic;
         QuicSslContext sslContext = buildSslContext(quic);
+        backendGroup = new NioEventLoopGroup();
+        backendConnector = new BackendConnector(config, backendGroup);
         QuicServerCodecBuilder codecBuilder = new QuicServerCodecBuilder()
                 .sslContext(sslContext)
-                .streamHandler(new ProxyStreamInitializer(config, routingPlanner, sessionLimiter, referralService));
+                .streamHandler(new ProxyStreamInitializer(config, routingPlanner, sessionLimiter, referralService, backendConnector));
 
         if (proxy.timeouts != null && proxy.timeouts.idleMs != null) {
             codecBuilder.maxIdleTimeout(proxy.timeouts.idleMs, TimeUnit.MILLISECONDS);
@@ -100,6 +104,11 @@ public final class ProxyServer {
             workerGroup.shutdownGracefully();
             workerGroup = null;
         }
+        if (backendGroup != null) {
+            backendGroup.shutdownGracefully();
+            backendGroup = null;
+        }
+        backendConnector = null;
     }
 
     private QuicSslContext buildSslContext(HyproxConfig.QuicConfig quic) {
