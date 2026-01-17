@@ -1,14 +1,14 @@
 package net.spookly.hyprox.proxy;
 
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.ScheduledFuture;
 import net.spookly.hyprox.config.HyproxConfig;
 import net.spookly.hyprox.routing.BackendHealthProbe;
 import net.spookly.hyprox.routing.BackendTarget;
-
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 /**
  * QUIC-based health probe that attempts a backend connection.

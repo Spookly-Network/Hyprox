@@ -1,5 +1,8 @@
 package net.spookly.hyprox.proxy;
 
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+
 import com.hypixel.hytale.protocol.io.netty.PacketDecoder;
 import com.hypixel.hytale.protocol.io.netty.PacketEncoder;
 import com.hypixel.hytale.server.core.io.netty.PacketArrayEncoder;
@@ -10,9 +13,6 @@ import io.netty.handler.timeout.ReadTimeoutHandler;
 import net.spookly.hyprox.auth.ReferralService;
 import net.spookly.hyprox.config.HyproxConfig;
 import net.spookly.hyprox.routing.RoutingPlanner;
-
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Initializes QUIC stream pipelines for proxy handshakes.

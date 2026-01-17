@@ -1,15 +1,15 @@
 package net.spookly.hyprox.proxy;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
+import java.util.List;
+
 import net.spookly.hyprox.routing.BackendSource;
 import net.spookly.hyprox.routing.BackendTarget;
 import net.spookly.hyprox.routing.DataPath;
 import net.spookly.hyprox.routing.RoutingDecision;
 import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 class RoutingDecisionContextTest {
     @Test

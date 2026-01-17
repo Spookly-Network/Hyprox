@@ -1,5 +1,17 @@
 package net.spookly.hyprox.auth;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.UUID;
+
 import net.spookly.hyprox.config.HyproxConfig;
 import net.spookly.hyprox.routing.BackendCapacityTracker;
 import net.spookly.hyprox.routing.BackendHealthTracker;
@@ -11,18 +23,6 @@ import net.spookly.hyprox.routing.RoutingPlanner;
 import net.spookly.hyprox.routing.RoutingRequest;
 import net.spookly.hyprox.routing.RoutingService;
 import org.junit.jupiter.api.Test;
-
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ReferralRedirectIntegrationTest {
     @Test

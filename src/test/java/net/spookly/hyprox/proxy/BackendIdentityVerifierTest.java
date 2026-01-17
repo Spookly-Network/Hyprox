@@ -1,8 +1,8 @@
 package net.spookly.hyprox.proxy;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import javax.security.auth.x500.X500Principal;
 import java.math.BigInteger;
 import java.security.Principal;
 import java.security.PublicKey;
@@ -12,8 +12,9 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import javax.security.auth.x500.X500Principal;
+
+import org.junit.jupiter.api.Test;
 
 class BackendIdentityVerifierTest {
     @Test

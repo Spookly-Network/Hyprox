@@ -1,11 +1,11 @@
 package net.spookly.hyprox.proxy;
 
+import java.util.Objects;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-
-import java.util.Objects;
 
 /**
  * Records byte counters for a data path stream.

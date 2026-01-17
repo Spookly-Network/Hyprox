@@ -1,11 +1,11 @@
 package net.spookly.hyprox.proxy;
 
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import com.hypixel.hytale.protocol.io.netty.ProtocolUtil;
 import io.netty.channel.Channel;
 import net.spookly.hyprox.routing.BackendReservation;
-
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Coordinates lifecycle between a client stream and backend connection.

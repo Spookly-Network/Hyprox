@@ -1,5 +1,17 @@
 package net.spookly.hyprox.proxy;
 
+import java.net.InetSocketAddress;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.Locale;
+import java.util.Objects;
+
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLPeerUnverifiedException;
+import javax.net.ssl.SSLSession;
+
 import com.hypixel.hytale.protocol.HostAddress;
 import com.hypixel.hytale.protocol.Packet;
 import com.hypixel.hytale.protocol.io.netty.PacketDecoder;
@@ -22,23 +34,12 @@ import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
 import net.spookly.hyprox.auth.ReferralService;
 import net.spookly.hyprox.config.HyproxConfig;
-import net.spookly.hyprox.routing.BackendTarget;
 import net.spookly.hyprox.routing.BackendReservation;
+import net.spookly.hyprox.routing.BackendTarget;
 import net.spookly.hyprox.routing.DataPath;
 import net.spookly.hyprox.routing.RoutingDecision;
 import net.spookly.hyprox.routing.RoutingPlanner;
 import net.spookly.hyprox.routing.RoutingRequest;
-
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLPeerUnverifiedException;
-import javax.net.ssl.SSLSession;
-import java.net.InetSocketAddress;
-import java.security.cert.Certificate;
-import java.security.cert.X509Certificate;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.Locale;
-import java.util.Objects;
 
 /**
  * Handles the initial client handshake and routes to referral or full proxy paths.

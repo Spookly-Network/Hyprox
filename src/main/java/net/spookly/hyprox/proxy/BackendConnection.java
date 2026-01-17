@@ -1,10 +1,10 @@
 package net.spookly.hyprox.proxy;
 
-import io.netty.channel.Channel;
-import net.spookly.hyprox.routing.BackendTarget;
-
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import io.netty.channel.Channel;
+import net.spookly.hyprox.routing.BackendTarget;
 
 /**
  * Wraps the QUIC connection and stream to a backend server.

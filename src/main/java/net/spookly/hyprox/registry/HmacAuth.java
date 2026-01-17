@@ -1,13 +1,14 @@
 package net.spookly.hyprox.registry;
 
-import lombok.AllArgsConstructor;
-
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.Base64;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+
+import lombok.AllArgsConstructor;
 
 /**
  * HMAC-based request authentication for the registry control plane.

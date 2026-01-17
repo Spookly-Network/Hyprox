@@ -1,10 +1,9 @@
 package net.spookly.hyprox.migration;
 
-import net.spookly.hyprox.config.HyproxConfig;
-import net.spookly.hyprox.routing.BackendCapacityTracker;
-import net.spookly.hyprox.routing.BackendHealthTracker;
-import net.spookly.hyprox.routing.RoutingService;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -13,10 +12,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import net.spookly.hyprox.config.HyproxConfig;
+import net.spookly.hyprox.routing.BackendCapacityTracker;
+import net.spookly.hyprox.routing.BackendHealthTracker;
+import net.spookly.hyprox.routing.RoutingService;
+import org.junit.jupiter.api.Test;
 
 class MigrationIntegrationTest {
     @Test

@@ -1,11 +1,11 @@
 package net.spookly.hyprox.proxy;
 
+import java.security.MessageDigest;
+import java.security.cert.X509Certificate;
+
 import io.netty.util.AttributeKey;
 import lombok.Getter;
 import lombok.experimental.Accessors;
-
-import java.security.MessageDigest;
-import java.security.cert.X509Certificate;
 
 /**
  * Captures per-session metadata derived from the QUIC handshake.

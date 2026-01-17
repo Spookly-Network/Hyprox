@@ -1,12 +1,16 @@
 package net.spookly.hyprox;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.concurrent.CountDownLatch;
+
+import net.spookly.hyprox.auth.ReferralService;
 import net.spookly.hyprox.config.ConfigLoader;
 import net.spookly.hyprox.config.ConfigPrinter;
 import net.spookly.hyprox.config.ConfigWarnings;
 import net.spookly.hyprox.config.HyproxConfig;
-import net.spookly.hyprox.auth.ReferralService;
-import net.spookly.hyprox.proxy.QuicBackendHealthProbe;
 import net.spookly.hyprox.proxy.ProxyServer;
+import net.spookly.hyprox.proxy.QuicBackendHealthProbe;
 import net.spookly.hyprox.registry.BackendRegistry;
 import net.spookly.hyprox.registry.RegistryAuditLogger;
 import net.spookly.hyprox.registry.RegistryEventListener;
@@ -17,10 +21,6 @@ import net.spookly.hyprox.routing.BackendHealthTracker;
 import net.spookly.hyprox.routing.PathSelector;
 import net.spookly.hyprox.routing.RoutingPlanner;
 import net.spookly.hyprox.routing.RoutingService;
-
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.concurrent.CountDownLatch;
 
 /**
  * Standalone entry point for the Hyprox proxy process.

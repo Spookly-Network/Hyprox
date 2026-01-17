@@ -1,9 +1,5 @@
 package net.spookly.hyprox.routing;
 
-import net.spookly.hyprox.config.HyproxConfig;
-import net.spookly.hyprox.registry.BackendRegistry;
-import net.spookly.hyprox.registry.RegisteredBackend;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -13,6 +9,10 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import net.spookly.hyprox.config.HyproxConfig;
+import net.spookly.hyprox.registry.BackendRegistry;
+import net.spookly.hyprox.registry.RegisteredBackend;
 
 /**
  * Builds routing decisions from static config and dynamic registry entries.

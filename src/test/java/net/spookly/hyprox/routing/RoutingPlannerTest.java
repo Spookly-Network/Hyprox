@@ -1,14 +1,14 @@
 package net.spookly.hyprox.routing;
 
-import net.spookly.hyprox.config.HyproxConfig;
-import net.spookly.hyprox.registry.BackendRegistry;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.LinkedHashMap;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import net.spookly.hyprox.config.HyproxConfig;
+import net.spookly.hyprox.registry.BackendRegistry;
+import org.junit.jupiter.api.Test;
 
 class RoutingPlannerTest {
     @Test

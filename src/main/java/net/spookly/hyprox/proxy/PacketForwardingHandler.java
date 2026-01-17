@@ -1,5 +1,7 @@
 package net.spookly.hyprox.proxy;
 
+import java.util.Objects;
+
 import com.hypixel.hytale.protocol.Packet;
 import com.hypixel.hytale.protocol.packets.auth.AuthToken;
 import com.hypixel.hytale.protocol.packets.auth.ServerAuthToken;
@@ -8,8 +10,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
-
-import java.util.Objects;
 
 /**
  * Forwards decoded packets between paired streams.

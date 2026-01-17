@@ -1,10 +1,5 @@
 package net.spookly.hyprox.proxy;
 
-import io.netty.handler.codec.quic.QuicChannel;
-
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLPeerUnverifiedException;
-import javax.net.ssl.SSLSession;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -13,6 +8,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLPeerUnverifiedException;
+import javax.net.ssl.SSLSession;
+
+import io.netty.handler.codec.quic.QuicChannel;
 
 /**
  * Validates backend certificates against host and SAN allowlists.

@@ -1,9 +1,9 @@
 package net.spookly.hyprox.routing;
 
-import net.spookly.hyprox.config.HyproxConfig;
-
 import java.util.List;
 import java.util.Objects;
+
+import net.spookly.hyprox.config.HyproxConfig;
 
 /**
  * Selects redirect vs full proxy data path based on config and pool.

@@ -1,10 +1,10 @@
 package net.spookly.hyprox.registry;
 
-import net.spookly.hyprox.config.HyproxConfig;
-
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import net.spookly.hyprox.config.HyproxConfig;
 
 /**
  * Utility helpers for registry initialization.

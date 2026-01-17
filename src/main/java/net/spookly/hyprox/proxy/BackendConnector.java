@@ -1,5 +1,12 @@
 package net.spookly.hyprox.proxy;
 
+import java.io.File;
+import java.net.InetSocketAddress;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -19,13 +26,6 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 import net.spookly.hyprox.config.HyproxConfig;
 import net.spookly.hyprox.routing.BackendTarget;
-
-import java.io.File;
-import java.net.InetSocketAddress;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Establishes QUIC connections from the proxy to backend servers.

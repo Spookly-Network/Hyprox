@@ -1,5 +1,11 @@
 package net.spookly.hyprox.proxy;
 
+import java.io.File;
+import java.net.InetSocketAddress;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelOption;
@@ -13,12 +19,6 @@ import io.netty.handler.ssl.ClientAuth;
 import net.spookly.hyprox.auth.ReferralService;
 import net.spookly.hyprox.config.HyproxConfig;
 import net.spookly.hyprox.routing.RoutingPlanner;
-
-import java.io.File;
-import java.net.InetSocketAddress;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 /**
  * QUIC proxy listener that accepts client sessions and routes them to backends.

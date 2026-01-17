@@ -1,7 +1,9 @@
 package net.spookly.hyprox.migration;
 
-import net.spookly.hyprox.config.HyproxConfig;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -10,10 +12,8 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import net.spookly.hyprox.config.HyproxConfig;
+import org.junit.jupiter.api.Test;
 
 class MigrationStateMachineTest {
     @Test

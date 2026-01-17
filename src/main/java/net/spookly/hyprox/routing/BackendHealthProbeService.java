@@ -1,7 +1,5 @@
 package net.spookly.hyprox.routing;
 
-import net.spookly.hyprox.config.HyproxConfig;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -11,6 +9,8 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import net.spookly.hyprox.config.HyproxConfig;
 
 /**
  * Runs periodic active probes and updates the backend health tracker.

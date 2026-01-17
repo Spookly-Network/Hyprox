@@ -1,11 +1,11 @@
 package net.spookly.hyprox.util;
 
+import java.net.InetSocketAddress;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.Accessors;
-
-import java.net.InetSocketAddress;
 
 /**
  * Parsed host/port tuple from a listen address string.

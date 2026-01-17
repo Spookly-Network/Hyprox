@@ -1,9 +1,9 @@
 package net.spookly.hyprox.registry;
 
-import net.spookly.hyprox.config.HyproxConfig;
-
 import java.net.InetAddress;
 import java.util.Objects;
+
+import net.spookly.hyprox.config.HyproxConfig;
 
 /**
  * Validates registry allowlist rules for orchestrators and backend identities.

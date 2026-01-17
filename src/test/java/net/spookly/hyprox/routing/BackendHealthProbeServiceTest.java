@@ -1,15 +1,15 @@
 package net.spookly.hyprox.routing;
 
-import net.spookly.hyprox.config.HyproxConfig;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import net.spookly.hyprox.config.HyproxConfig;
+import org.junit.jupiter.api.Test;
 
 class BackendHealthProbeServiceTest {
     @Test

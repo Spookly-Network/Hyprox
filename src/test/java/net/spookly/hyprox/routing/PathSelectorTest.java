@@ -1,11 +1,11 @@
 package net.spookly.hyprox.routing;
 
-import net.spookly.hyprox.config.HyproxConfig;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import net.spookly.hyprox.config.HyproxConfig;
+import org.junit.jupiter.api.Test;
 
 class PathSelectorTest {
     @Test

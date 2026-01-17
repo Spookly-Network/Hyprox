@@ -1,10 +1,10 @@
 package net.spookly.hyprox.routing;
 
-import lombok.Getter;
-import lombok.experimental.Accessors;
-
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import lombok.Getter;
+import lombok.experimental.Accessors;
 
 /**
  * Represents a reserved capacity slot for a backend target.

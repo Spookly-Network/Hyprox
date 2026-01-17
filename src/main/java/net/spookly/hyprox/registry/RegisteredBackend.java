@@ -1,11 +1,11 @@
 package net.spookly.hyprox.registry;
 
+import java.time.Instant;
+import java.util.List;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.Accessors;
-
-import java.time.Instant;
-import java.util.List;
 
 /**
  * Mutable runtime view of a backend registered by an orchestrator.

@@ -1,13 +1,13 @@
 package net.spookly.hyprox.migration;
 
+import java.time.Clock;
+import java.time.Instant;
+
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 import net.spookly.hyprox.config.ConfigException;
 import net.spookly.hyprox.config.HyproxConfig;
-
-import java.time.Clock;
-import java.time.Instant;
 
 /**
  * State machine for orchestrating seamless backend migration.

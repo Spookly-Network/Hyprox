@@ -1,10 +1,10 @@
 package net.spookly.hyprox.routing;
 
+import java.util.List;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.Accessors;
-
-import java.util.List;
 
 /**
  * Immutable routing target for a backend server.

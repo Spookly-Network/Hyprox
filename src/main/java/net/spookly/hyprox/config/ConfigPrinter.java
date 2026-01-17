@@ -1,10 +1,10 @@
 package net.spookly.hyprox.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.yaml.snakeyaml.Yaml;
-
 import java.util.List;
 import java.util.Map;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.yaml.snakeyaml.Yaml;
 
 /**
  * Renders the effective configuration with sensitive values redacted.

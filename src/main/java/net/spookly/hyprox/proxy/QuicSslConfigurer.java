@@ -1,9 +1,9 @@
 package net.spookly.hyprox.proxy;
 
-import io.netty.handler.codec.quic.QuicSslContextBuilder;
-
 import java.lang.reflect.Method;
 import java.util.List;
+
+import io.netty.handler.codec.quic.QuicSslContextBuilder;
 
 /**
  * Applies optional TLS settings to QUIC SSL builders.

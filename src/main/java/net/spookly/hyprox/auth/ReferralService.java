@@ -1,5 +1,19 @@
 package net.spookly.hyprox.auth;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.SecureRandom;
+import java.time.Clock;
+import java.time.Instant;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -13,19 +27,6 @@ import net.spookly.hyprox.config.HyproxConfig;
 import net.spookly.hyprox.registry.NonceCache;
 import net.spookly.hyprox.routing.BackendTarget;
 import net.spookly.hyprox.routing.RoutingService;
-
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.SecureRandom;
-import java.io.IOException;
-import java.time.Clock;
-import java.time.Instant;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * Signs and verifies referral payloads for secure redirect routing.

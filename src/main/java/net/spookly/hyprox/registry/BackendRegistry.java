@@ -1,8 +1,5 @@
 package net.spookly.hyprox.registry;
 
-import lombok.NonNull;
-import net.spookly.hyprox.config.HyproxConfig;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -13,6 +10,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import lombok.NonNull;
+import net.spookly.hyprox.config.HyproxConfig;
 
 /**
  * In-memory store for dynamic backend registrations with TTL and drain support.

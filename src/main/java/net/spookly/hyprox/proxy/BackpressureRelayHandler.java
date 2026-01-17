@@ -1,10 +1,10 @@
 package net.spookly.hyprox.proxy;
 
+import java.util.Objects;
+
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-
-import java.util.Objects;
 
 /**
  * Coordinates auto-read with the writability of a paired channel.

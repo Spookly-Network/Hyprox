@@ -1,9 +1,9 @@
 package net.spookly.hyprox.registry;
 
+import java.time.Instant;
+
 import lombok.Value;
 import lombok.experimental.Accessors;
-
-import java.time.Instant;
 
 /**
  * Snapshot of a registry state change for audit logging.

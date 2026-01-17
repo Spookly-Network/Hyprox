@@ -1,16 +1,16 @@
 package net.spookly.hyprox.registry;
 
-import net.spookly.hyprox.config.HyproxConfig;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import net.spookly.hyprox.config.HyproxConfig;
+import org.junit.jupiter.api.Test;
 
 class RegistryAllowlistValidatorTest {
     @Test
