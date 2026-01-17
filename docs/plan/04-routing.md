@@ -20,6 +20,7 @@ Routing decisions
 - Referral routing only applies when signature, TTL, and target backend id are valid; otherwise ignore referral data.
 - Use the backend address from configuration; do not trust `hostTo` from unverified referral data.
 - When a stable client key is available (cert fingerprint or address), use weighted rendezvous hashing for consistent selection.
+- When a referral payload is valid, route directly to the targeted backend id.
 
 Health checks
 - Passive: connection failures, timeouts.

@@ -11,7 +11,7 @@ mTLS and trust anchors
 - Backends pin the proxy CA and accept only proxy client certs for inbound QUIC.
 
 Referral payloads
-- Signed envelope with `keyId`, `issuedAt`, `ttlSeconds`, `nonce`, `targetBackendId`, and `sessionId` (bind to client uuid).
+- Signed envelope with `keyId`, `issuedAt`, `ttlSeconds`, `nonce`, `targetBackendId`, and `clientUuid`.
 - Use HMAC-SHA256 or Ed25519; verify with constant-time compare.
 - Use per-backend or per-pool keys; enforce key scope so a compromised backend cannot mint referrals for other pools.
 - Enforce short TTL and nonce replay protection (LRU cache per key).

@@ -28,7 +28,22 @@ Referral and redirect
 - Referral connections surface on the next `Connect` via `referralData` and `referralSource`.
 - `PlayerSetupConnectEvent.referToServer(...)` uses `ClientReferral` during setup to redirect.
 - Proxy must validate referral signatures and target backend ids before using `referralSource` or `referralData` for routing.
-- Referral payloads are signed envelopes that include `keyId`, `issuedAt`, `ttl`, `nonce`, and `targetBackendId`.
+- Referral payloads are signed JSON envelopes that include `keyId`, `issuedAt`, `ttlSeconds`, `nonce`, `targetBackendId`, and `clientUuid`.
+- Signature is HMAC-SHA256 over a canonical newline-delimited string and encoded as base64.
+- Nonce is base64 (URL-safe preferred).
+
+Example referral payload
+```
+{
+  "keyId": "k1",
+  "issuedAt": 1735689600,
+  "ttlSeconds": 30,
+  "nonce": "AAAAAAAAAAA",
+  "targetBackendId": "lobby-1",
+  "clientUuid": "00000000-0000-0000-0000-000000000001",
+  "signature": "base64-hmac"
+}
+```
 
 Setup and world entry (observed in `SetupPacketHandler`)
 - `WorldSettings` (id 20): world height + required assets (compressed).

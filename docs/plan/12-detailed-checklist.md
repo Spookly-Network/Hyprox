@@ -19,11 +19,11 @@
 - [x] Persist routing decision reason for metrics/logging.
 
 ## Referral payloads
-- [ ] Define referral envelope schema (keyId, issuedAt, ttl, nonce, targetBackendId, clientUuid).
-- [ ] Implement HMAC signing for outgoing referrals.
-- [ ] Implement verification, TTL, nonce replay cache, and scope checks.
-- [ ] Only trust referral host when signature and target backend are valid.
-- [ ] Add config for key rotation and overlapping validity.
+- [x] Define referral envelope schema (keyId, issuedAt, ttl, nonce, targetBackendId, clientUuid).
+- [x] Implement HMAC signing for outgoing referrals.
+- [x] Implement verification, TTL, nonce replay cache, and scope checks.
+- [x] Only trust referral host when signature and target backend are valid.
+- [x] Add config for key rotation and overlapping validity.
 
 ## Dynamic registry
 - [x] Enforce backend cert SAN allowlist on registration activation.
@@ -70,7 +70,7 @@
 - [x] Add allowlist checks for registry source IPs and orchestrator IDs.
 
 ## Testing
-- [ ] Unit tests for routing, selection, referral signing/verification.
+- [x] Unit tests for routing, selection, referral signing/verification.
 - [ ] Unit tests for registry validation (allowlists, TTL, drain).
 - [ ] Integration tests for redirect/referral paths.
 - [ ] Integration tests for full-proxy forwarding (mock backend).

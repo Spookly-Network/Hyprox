@@ -38,6 +38,14 @@ public final class RoutingService {
      * Route a request to a backend using pool rules and selection policy.
      */
     public RoutingResult route(RoutingRequest request) {
+        BackendTarget referred = resolveReferralTarget(request);
+        if (referred != null) {
+            BackendReservation reservation = tryReserve(referred);
+            if (reservation != null) {
+                return new RoutingResult(referred.pool(), referred, reservation, "referral_target");
+            }
+            return new RoutingResult(referred.pool(), null, null, "pool_full");
+        }
         String pool = selectPool(request);
         if (isBlank(pool)) {
             return new RoutingResult(null, null, null, "no_pool");
@@ -57,6 +65,24 @@ public final class RoutingService {
             return new RoutingResult(pool, null, null, "pool_full");
         }
         return new RoutingResult(pool, reservation.backend(), reservation, "selected");
+    }
+
+    /**
+     * Resolve a backend id to a target entry, honoring drain exclusions.
+     */
+    public BackendTarget findBackendById(String backendId, boolean includeDraining) {
+        if (isBlank(backendId) || config.routing == null || config.routing.pools == null) {
+            return null;
+        }
+        for (String pool : config.routing.pools.keySet()) {
+            List<BackendTarget> candidates = listBackends(pool, includeDraining);
+            for (BackendTarget candidate : candidates) {
+                if (backendId.equals(candidate.id())) {
+                    return candidate;
+                }
+            }
+        }
+        return null;
     }
 
     /**
@@ -256,6 +282,13 @@ public final class RoutingService {
             return BackendReservation.unlimited(candidate);
         }
         return capacityTracker.tryReserve(candidate);
+    }
+
+    private BackendTarget resolveReferralTarget(RoutingRequest request) {
+        if (request == null || isBlank(request.targetBackendId())) {
+            return null;
+        }
+        return findBackendById(request.targetBackendId(), false);
     }
 
     private List<BackendTarget> filterHealthy(List<BackendTarget> candidates) {

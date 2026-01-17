@@ -10,6 +10,7 @@ import io.netty.handler.codec.quic.QuicServerCodecBuilder;
 import io.netty.handler.codec.quic.QuicSslContext;
 import io.netty.handler.codec.quic.QuicSslContextBuilder;
 import io.netty.handler.ssl.ClientAuth;
+import net.spookly.hyprox.auth.ReferralService;
 import net.spookly.hyprox.config.HyproxConfig;
 import net.spookly.hyprox.routing.RoutingPlanner;
 
@@ -26,12 +27,14 @@ public final class ProxyServer {
     private final HyproxConfig config;
     private final RoutingPlanner routingPlanner;
     private final ProxySessionLimiter sessionLimiter;
+    private final ReferralService referralService;
     private EventLoopGroup workerGroup;
     private Channel channel;
 
-    public ProxyServer(HyproxConfig config, RoutingPlanner routingPlanner) {
+    public ProxyServer(HyproxConfig config, RoutingPlanner routingPlanner, ReferralService referralService) {
         this.config = Objects.requireNonNull(config, "config");
         this.routingPlanner = Objects.requireNonNull(routingPlanner, "routingPlanner");
+        this.referralService = Objects.requireNonNull(referralService, "referralService");
         HyproxConfig.LimitsConfig limits = config.proxy == null ? null : config.proxy.limits;
         this.sessionLimiter = new ProxySessionLimiter(
                 limits == null ? null : limits.handshakesPerMinutePerIp,
@@ -52,7 +55,7 @@ public final class ProxyServer {
         QuicSslContext sslContext = buildSslContext(quic);
         QuicServerCodecBuilder codecBuilder = new QuicServerCodecBuilder()
                 .sslContext(sslContext)
-                .streamHandler(new ProxyStreamInitializer(config, routingPlanner, sessionLimiter));
+                .streamHandler(new ProxyStreamInitializer(config, routingPlanner, sessionLimiter, referralService));
 
         if (proxy.timeouts != null && proxy.timeouts.idleMs != null) {
             codecBuilder.maxIdleTimeout(proxy.timeouts.idleMs, TimeUnit.MILLISECONDS);

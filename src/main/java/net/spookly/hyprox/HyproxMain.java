@@ -4,6 +4,7 @@ import net.spookly.hyprox.config.ConfigLoader;
 import net.spookly.hyprox.config.ConfigPrinter;
 import net.spookly.hyprox.config.ConfigWarnings;
 import net.spookly.hyprox.config.HyproxConfig;
+import net.spookly.hyprox.auth.ReferralService;
 import net.spookly.hyprox.proxy.ProxyServer;
 import net.spookly.hyprox.registry.BackendRegistry;
 import net.spookly.hyprox.registry.RegistryAuditLogger;
@@ -56,7 +57,8 @@ public final class HyproxMain {
         BackendHealthTracker healthTracker = new BackendHealthTracker();
         RoutingService routingService = new RoutingService(config, registry, capacityTracker, healthTracker);
         RoutingPlanner routingPlanner = new RoutingPlanner(routingService, new PathSelector(config));
-        ProxyServer proxyServer = new ProxyServer(config, routingPlanner);
+        ReferralService referralService = new ReferralService(config, routingService);
+        ProxyServer proxyServer = new ProxyServer(config, routingPlanner, referralService);
         proxyServer.start();
 
         RegistryServer registryServer = null;

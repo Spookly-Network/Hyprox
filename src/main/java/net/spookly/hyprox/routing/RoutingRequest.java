@@ -17,4 +17,8 @@ public final class RoutingRequest {
      * Stable routing key (certificate fingerprint or address) for consistent backend selection.
      */
     private final String selectionKey;
+    /**
+     * Explicit backend target id from a verified referral payload.
+     */
+    private final String targetBackendId;
 }

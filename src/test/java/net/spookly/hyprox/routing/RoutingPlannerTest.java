@@ -28,7 +28,7 @@ class RoutingPlannerTest {
         );
         RoutingPlanner planner = new RoutingPlanner(routingService, new PathSelector(config));
 
-        RoutingDecision decision = planner.decide(new RoutingRequest("game", null, null));
+        RoutingDecision decision = planner.decide(new RoutingRequest("game", null, null, null));
 
         assertEquals("game", decision.pool());
         assertEquals(DataPath.FULL_PROXY, decision.dataPath());

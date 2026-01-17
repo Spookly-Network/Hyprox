@@ -7,6 +7,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.quic.QuicStreamChannel;
 import io.netty.handler.timeout.ReadTimeoutHandler;
+import net.spookly.hyprox.auth.ReferralService;
 import net.spookly.hyprox.config.HyproxConfig;
 import net.spookly.hyprox.routing.RoutingPlanner;
 
@@ -20,11 +21,16 @@ public final class ProxyStreamInitializer extends ChannelInitializer<QuicStreamC
     private final HyproxConfig config;
     private final RoutingPlanner routingPlanner;
     private final ProxySessionLimiter sessionLimiter;
+    private final ReferralService referralService;
 
-    public ProxyStreamInitializer(HyproxConfig config, RoutingPlanner routingPlanner, ProxySessionLimiter sessionLimiter) {
+    public ProxyStreamInitializer(HyproxConfig config,
+                                  RoutingPlanner routingPlanner,
+                                  ProxySessionLimiter sessionLimiter,
+                                  ReferralService referralService) {
         this.config = Objects.requireNonNull(config, "config");
         this.routingPlanner = Objects.requireNonNull(routingPlanner, "routingPlanner");
         this.sessionLimiter = Objects.requireNonNull(sessionLimiter, "sessionLimiter");
+        this.referralService = Objects.requireNonNull(referralService, "referralService");
     }
 
     @Override
@@ -36,6 +42,6 @@ public final class ProxyStreamInitializer extends ChannelInitializer<QuicStreamC
         pipeline.addLast("packetDecoder", new PacketDecoder());
         pipeline.addLast("packetEncoder", new PacketEncoder());
         pipeline.addLast("packetArrayEncoder", new PacketArrayEncoder());
-        pipeline.addLast("handler", new ProxyStreamHandler(config, routingPlanner, sessionLimiter));
+        pipeline.addLast("handler", new ProxyStreamHandler(config, routingPlanner, sessionLimiter, referralService));
     }
 }

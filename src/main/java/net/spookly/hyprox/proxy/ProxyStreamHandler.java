@@ -13,6 +13,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.quic.QuicChannel;
 import io.netty.handler.timeout.ReadTimeoutException;
+import net.spookly.hyprox.auth.ReferralService;
 import net.spookly.hyprox.config.HyproxConfig;
 import net.spookly.hyprox.routing.BackendTarget;
 import net.spookly.hyprox.routing.BackendReservation;
@@ -36,15 +37,20 @@ import java.util.Objects;
 public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet> {
     private final RoutingPlanner routingPlanner;
     private final ProxySessionLimiter sessionLimiter;
+    private final ReferralService referralService;
     private boolean handled;
     private boolean sessionTracked;
     private String remoteAddress;
     private BackendReservation backendReservation;
 
-    public ProxyStreamHandler(HyproxConfig config, RoutingPlanner routingPlanner, ProxySessionLimiter sessionLimiter) {
+    public ProxyStreamHandler(HyproxConfig config,
+                              RoutingPlanner routingPlanner,
+                              ProxySessionLimiter sessionLimiter,
+                              ReferralService referralService) {
         Objects.requireNonNull(config, "config");
         this.routingPlanner = Objects.requireNonNull(routingPlanner, "routingPlanner");
         this.sessionLimiter = Objects.requireNonNull(sessionLimiter, "sessionLimiter");
+        this.referralService = Objects.requireNonNull(referralService, "referralService");
     }
 
     @Override
@@ -77,7 +83,7 @@ public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet
             sendDisconnect(ctx, "full proxy path not yet enabled", DisconnectType.Disconnect);
             return;
         }
-        sendReferral(ctx, backend);
+        sendReferral(ctx, backend, connect);
     }
 
     @Override
@@ -112,16 +118,19 @@ public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet
 
     private RoutingRequest toRequest(ChannelHandlerContext ctx, Connect connect) {
         String clientType = mapClientType(connect.clientType);
+        ReferralService.VerifyResult referralResult = referralService.verifyReferral(connect.referralData, connect.uuid);
         String referralSource = null;
-        if (connect.referralData == null || connect.referralData.length == 0) {
+        String targetBackendId = null;
+        if (referralResult.ok()) {
             if (connect.referralSource != null
                     && connect.referralSource.host != null
                     && !connect.referralSource.host.trim().isEmpty()) {
                 referralSource = connect.referralSource.host.trim();
             }
+            targetBackendId = referralResult.targetBackendId();
         }
         String selectionKey = resolveSelectionKey(ctx);
-        return new RoutingRequest(clientType, referralSource, selectionKey);
+        return new RoutingRequest(clientType, referralSource, selectionKey, targetBackendId);
     }
 
     private String mapClientType(ClientType clientType) {
@@ -131,14 +140,20 @@ public final class ProxyStreamHandler extends SimpleChannelInboundHandler<Packet
         return clientType.name().toLowerCase(Locale.ROOT);
     }
 
-    private void sendReferral(ChannelHandlerContext ctx, BackendTarget backend) {
+    private void sendReferral(ChannelHandlerContext ctx, BackendTarget backend, Connect connect) {
         if (backend.port() <= 0 || backend.port() > 65535) {
             releaseReservation();
             sendDisconnect(ctx, "invalid backend port", DisconnectType.Disconnect);
             return;
         }
+        ReferralService.SignResult signResult = referralService.signReferral(backend, connect.uuid);
+        if (!signResult.ok()) {
+            releaseReservation();
+            sendDisconnect(ctx, "referral signing failed", DisconnectType.Disconnect);
+            return;
+        }
         HostAddress hostAddress = new HostAddress(backend.host(), (short) backend.port());
-        ClientReferral referral = new ClientReferral(hostAddress, new byte[0]);
+        ClientReferral referral = new ClientReferral(hostAddress, signResult.payload());
         ctx.writeAndFlush(referral).addListener(ProtocolUtil.CLOSE_ON_COMPLETE);
     }
 
