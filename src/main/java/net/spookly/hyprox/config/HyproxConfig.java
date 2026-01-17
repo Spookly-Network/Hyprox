@@ -122,6 +122,7 @@ public class HyproxConfig {
         public Integer bufferGlobalMaxPackets;
         public Boolean ticketRequired;
         public Integer ticketMaxAgeSeconds;
+        public SigningConfig ticketSigning;
         public List<String> allowPools;
     }
 

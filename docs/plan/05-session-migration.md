@@ -26,6 +26,23 @@ Session data to capture (initial list)
 - From world entry: `JoinWorld` (world UUID and flags).
 - From backend A: migration ticket (signed, short TTL, bound to client uuid and target backend id).
 
+Migration ticket schema
+- `keyId`: signing key id.
+- `issuedAt`: epoch seconds.
+- `ttlSeconds`: validity window in seconds.
+- `nonce`: base64url random bytes for replay protection.
+- `sourceBackendId`: backend that issued the ticket.
+- `targetBackendId`: backend the client is migrating to.
+- `clientUuid`: client UUID bound to the ticket.
+- `signature`: HMAC over the canonical payload.
+
+Signing rules
+- Canonical string joins fields with newline in order: `keyId`, `issuedAt`, `ttlSeconds`, `nonce`, `sourceBackendId`, `targetBackendId`, `clientUuid`.
+- Sign with HMAC-SHA256 using `migration.ticketSigning` keys; verify with constant-time compare.
+- Reject if `ttlSeconds` exceeds `migration.ticketMaxAgeSeconds` or `issuedAt` falls outside the TTL window.
+- Enforce nonce replay protection per `keyId`.
+- Require source/target backend ids and client UUID to match the expected handoff.
+
 Handoff sequencing (full proxy)
 - Open B connection and complete auth before freezing client traffic.
 - Freeze client->A, flush A->client to avoid diverging state.

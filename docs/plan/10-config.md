@@ -86,6 +86,18 @@ migration:
   bufferGlobalMaxPackets: int
   ticketRequired: bool
   ticketMaxAgeSeconds: int
+  ticketSigning:
+    algorithm: hmac-sha256
+    activeKeyId: string
+    ttlSeconds: int
+    nonceBytes: int
+    keys:
+      - keyId: string
+        key: env:HYPROX_MIGRATION_HMAC | string
+        scope: backend | pool | global
+        scopeId: string
+        validFrom: timestamp
+        validTo: timestamp
   allowPools: [poolName]
 
 observability:
@@ -228,6 +240,18 @@ migration:
   bufferGlobalMaxPackets: 8192
   ticketRequired: true
   ticketMaxAgeSeconds: 10
+  ticketSigning:
+    algorithm: hmac-sha256
+    activeKeyId: k1
+    ttlSeconds: 10
+    nonceBytes: 16
+    keys:
+      - keyId: k1
+        key: env:HYPROX_MIGRATION_HMAC
+        scope: backend
+        scopeId: game-1
+        validFrom: 2025-01-01T00:00:00Z
+        validTo: 2025-12-31T23:59:59Z
   allowPools: ["game"]
 
 observability:

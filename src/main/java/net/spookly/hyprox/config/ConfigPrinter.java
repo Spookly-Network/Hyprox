@@ -62,6 +62,25 @@ public final class ConfigPrinter {
                 }
             }
         }
+        Object migration = data.get("migration");
+        if (migration instanceof Map) {
+            Map<String, Object> migrationMap = (Map<String, Object>) migration;
+            Object ticketSigning = migrationMap.get("ticketSigning");
+            if (ticketSigning instanceof Map) {
+                Map<String, Object> signingMap = (Map<String, Object>) ticketSigning;
+                Object keys = signingMap.get("keys");
+                if (keys instanceof List) {
+                    for (Object keyEntry : (List<?>) keys) {
+                        if (keyEntry instanceof Map) {
+                            Map<String, Object> keyMap = (Map<String, Object>) keyEntry;
+                            if (keyMap.containsKey("key")) {
+                                keyMap.put("key", REDACTED);
+                            }
+                        }
+                    }
+                }
+            }
+        }
         Object agent = data.get("agent");
         if (agent instanceof Map) {
             Map<String, Object> agentMap = (Map<String, Object>) agent;

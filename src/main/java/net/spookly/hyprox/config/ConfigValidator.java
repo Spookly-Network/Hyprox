@@ -241,6 +241,7 @@ public final class ConfigValidator {
                 errors.add("migration.allowPools must be set when migration.enabled is true");
             }
             requirePositive(errors, migration.ticketMaxAgeSeconds, "migration.ticketMaxAgeSeconds");
+            validateMigrationTicketSigning(migration, errors);
             HyproxConfig.RoutingConfig routing = config.routing;
             if (routing != null && routing.pools != null && migration.allowPools != null) {
                 for (String pool : migration.allowPools) {
@@ -255,6 +256,50 @@ public final class ConfigValidator {
         }
         if (!isBlank(migration.mode) && !isOneOf(migration.mode, "full_proxy_only")) {
             errors.add("migration.mode must be full_proxy_only");
+        }
+    }
+
+    private static void validateMigrationTicketSigning(HyproxConfig.MigrationConfig migration, List<String> errors) {
+        HyproxConfig.SigningConfig signing = migration.ticketSigning;
+        if (signing == null) {
+            errors.add("migration.ticketSigning is required when migration.enabled is true");
+            return;
+        }
+        requireNonBlank(errors, signing.algorithm, "migration.ticketSigning.algorithm");
+        if (!isOneOf(signing.algorithm, "hmac-sha256")) {
+            errors.add("migration.ticketSigning.algorithm must be hmac-sha256");
+        }
+        requireNonBlank(errors, signing.activeKeyId, "migration.ticketSigning.activeKeyId");
+        if (signing.keys == null || signing.keys.isEmpty()) {
+            errors.add("migration.ticketSigning.keys must include at least one key");
+            return;
+        }
+        boolean foundActive = false;
+        for (HyproxConfig.SigningKeyConfig key : signing.keys) {
+            if (key == null) {
+                continue;
+            }
+            requireNonBlank(errors, key.keyId, "migration.ticketSigning.keys.keyId");
+            requireNonBlank(errors, key.key, "migration.ticketSigning.keys.key");
+            requireNonBlank(errors, key.scope, "migration.ticketSigning.keys.scope");
+            if (!isBlank(key.scope) && !isOneOf(key.scope, "backend", "pool", "global")) {
+                errors.add("migration.ticketSigning.keys.scope must be backend, pool, or global");
+            }
+            if (isOneOf(key.scope, "backend", "pool")) {
+                requireNonBlank(errors, key.scopeId, "migration.ticketSigning.keys.scopeId");
+            }
+            if (!isBlank(key.keyId) && key.keyId.equals(signing.activeKeyId)) {
+                foundActive = true;
+            }
+        }
+        if (!foundActive) {
+            errors.add("migration.ticketSigning.activeKeyId must match a keyId in ticketSigning.keys");
+        }
+        requirePositive(errors, signing.ttlSeconds, "migration.ticketSigning.ttlSeconds");
+        requirePositive(errors, signing.nonceBytes, "migration.ticketSigning.nonceBytes");
+        if (migration.ticketMaxAgeSeconds != null && signing.ttlSeconds != null
+                && migration.ticketMaxAgeSeconds < signing.ttlSeconds) {
+            errors.add("migration.ticketMaxAgeSeconds must be >= migration.ticketSigning.ttlSeconds");
         }
     }
 

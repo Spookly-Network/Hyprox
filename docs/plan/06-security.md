@@ -21,6 +21,7 @@ Proxy auth strategy
 - Default: pass-through, proxy does not terminate auth.
 - Full proxy path: proxy only initiates backend auth using tokens received from the client.
 - Seamless migration requires a backend-issued migration ticket (signed, short TTL). If unavailable, migration for that pool is disabled.
+- Migration ticket signatures use the `migration.ticketSigning` key set; enforce scope to the source backend or pool.
 - If auth termination is enabled, store tokens in memory only and clear on disconnect.
 
 Agent and control-plane security
