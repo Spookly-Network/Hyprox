@@ -79,6 +79,6 @@
 
 ## Docs and ops
 - [ ] Document runbooks for cert rotation and key management.
-- [ ] Document registry usage for orchestrators (examples + curl).
+- [x] Document registry usage for orchestrators (examples + curl).
 - [ ] Add troubleshooting guide for common disconnects and TLS errors.
 - [ ] Add release checklist and versioning notes.
