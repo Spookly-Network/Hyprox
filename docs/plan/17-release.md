@@ -30,6 +30,7 @@ This checklist is for cutting a tagged release of Hyprox.
 6) Tag and publish
    - Tag the commit (`vMAJOR.MINOR.PATCH`).
    - Publish artifacts and release notes.
+   - If publishing Docker images, run `docker buildx build -f infra/Dockerfile --platform linux/amd64,linux/arm64 -t org/hyprox:VERSION --push .`
 7) Post-release follow-ups
    - Bump `build.gradle` back to the next `-SNAPSHOT`.
    - Note any follow-up work in `docs/plan/11-next-steps.md`.

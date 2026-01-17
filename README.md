@@ -18,10 +18,12 @@ This guide is for people who just want to get the proxy running.
 1) Open a terminal in the project root.
 2) Start the container once to generate a default config and self-signed certs:
    - `docker compose up --build`
+   - To use a published image instead: `HYPROX_IMAGE=yourorg/hyprox:tag docker compose up`
 3) Stop the container after it creates `/config/hyprox.yaml`.
+   - If `HYPROX_REFERRAL_HMAC` is not set, the container also writes one to `/config/secret/referral_hmac`.
 4) Edit `config/hyprox.yaml`:
    - Set `proxy.quic.cert` and `proxy.quic.key` to your cert/key paths.
-   - Set `HYPROX_REFERRAL_HMAC` in your environment or replace `env:HYPROX_REFERRAL_HMAC` with a real key.
+   - Keep the default `path:secret/referral_hmac`, or switch to `env:HYPROX_REFERRAL_HMAC` if you prefer env vars.
    - Update backend addresses in `routing.pools`.
 5) Start again:
    - `docker compose up`
@@ -32,6 +34,7 @@ This guide is for people who just want to get the proxy running.
    - `./gradlew build`
 2) Run once to generate a default config:
    - `java -jar build/libs/<jar-name>.jar --config config/hyprox.yaml`
+   - This also creates `config/secret/referral_hmac` and references it in the config.
 3) Edit `config/hyprox.yaml` (same notes as Docker).
 4) Run for real:
    - `java -jar build/libs/<jar-name>.jar --config config/hyprox.yaml`
@@ -44,6 +47,7 @@ This guide is for people who just want to get the proxy running.
 
 - The first run writes a default config file and exits. Edit it before running again.
 - The container also generates a self-signed cert in `config/certs` if none exists.
+- `HYPROX_REFERRAL_HMAC` is a secret string used to sign referral payloads (use a strong random value).
 - `proxy.mode` controls how clients connect:
   - `redirect`: proxy only redirects clients to a backend.
   - `full`: proxy keeps a live connection and forwards packets.

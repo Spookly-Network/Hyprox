@@ -2,6 +2,7 @@
 
 Format
 - YAML (human-editable), with optional env expansion via `env:VAR_NAME`.
+- File expansion via `path:relative/or/absolute` (relative to the config file directory).
 
 Top-level keys
 - `proxy`: listener + QUIC + general mode.
@@ -48,7 +49,7 @@ auth:
       activeKeyId: string
       keys:
         - keyId: string
-          key: env:HYPROX_REFERRAL_HMAC | path
+          key: env:HYPROX_REFERRAL_HMAC | path:secret/referral_hmac
           scope: backend | pool | global
           scopeId: string
           validFrom: iso8601

@@ -6,6 +6,7 @@ This guide describes how to configure and run Hyprox, and explains the key confi
 
 1) Create `config/hyprox.yaml` from the schema in `docs/plan/10-config.md`.
    - If the file is missing, Hyprox writes a default template and exits.
+   - The default template references `path:secret/referral_hmac` and writes the secret file.
 2) Validate the config:
 ```
 ./gradlew run --args="--config config/hyprox.yaml --dry-run"
@@ -101,6 +102,8 @@ Other auth settings:
   - `algorithm`: `hmac-sha256`.
   - `activeKeyId`: key to use for signing.
   - `keys`: key set with scope (`backend`, `pool`, `global`) and validity windows.
+    The key value can be an env var reference (e.g. `env:HYPROX_REFERRAL_HMAC`) that resolves
+    to a secret string, or a file path.
   - `ttlSeconds`: referral expiry window.
   - `nonceBytes`: minimum nonce size.
 

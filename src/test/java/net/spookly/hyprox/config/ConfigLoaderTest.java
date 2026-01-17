@@ -1,5 +1,7 @@
 package net.spookly.hyprox.config;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -21,6 +23,28 @@ class ConfigLoaderTest {
         assertTrue(Files.exists(configPath));
         String content = Files.readString(configPath, StandardCharsets.UTF_8);
         assertTrue(content.contains("proxy:"));
+        assertTrue(content.contains("path:secret/referral_hmac"));
+        Path secretPath = tempDir.resolve("secret").resolve("referral_hmac");
+        assertTrue(Files.exists(secretPath));
+        assertFalse(Files.readString(secretPath, StandardCharsets.UTF_8).isBlank());
         assertTrue(exception.getMessage().contains("generated default"));
+    }
+
+    @Test
+    void expandsPathSecretsRelativeToConfig() throws IOException {
+        Path tempDir = Files.createTempDirectory("hyprox-config");
+        Path configPath = tempDir.resolve("hyprox.yaml");
+        Path secretPath = tempDir.resolve("secret").resolve("referral_hmac");
+        Files.createDirectories(secretPath.getParent());
+        Files.writeString(secretPath, "test-secret", StandardCharsets.UTF_8);
+        Files.writeString(
+                configPath,
+                ConfigDefaults.defaultYaml("secret/referral_hmac"),
+                StandardCharsets.UTF_8
+        );
+
+        HyproxConfig config = ConfigLoader.load(configPath);
+
+        assertEquals("test-secret", config.auth.referral.signing.keys.get(0).key);
     }
 }

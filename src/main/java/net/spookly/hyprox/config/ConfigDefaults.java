@@ -4,9 +4,9 @@ package net.spookly.hyprox.config;
  * Default configuration template written when no config file exists.
  */
 public final class ConfigDefaults {
-    private static final String DEFAULT_YAML = """
+    private static final String DEFAULT_YAML_TEMPLATE = """
             # Generated default Hyprox config.
-            # Update cert paths and set HYPROX_REFERRAL_HMAC before running.
+            # A referral HMAC is stored at %s. Keep it secret.
             proxy:
               listen:
                 host: 0.0.0.0
@@ -35,7 +35,7 @@ public final class ConfigDefaults {
                   activeKeyId: default
                   keys:
                     - keyId: default
-                      key: env:HYPROX_REFERRAL_HMAC
+                      key: path:%s
                       scope: global
                   ttlSeconds: 60
                   nonceBytes: 16
@@ -60,7 +60,10 @@ public final class ConfigDefaults {
     /**
      * Render the default configuration template.
      */
-    public static String defaultYaml() {
-        return DEFAULT_YAML;
+    public static String defaultYaml(String referralKeyPath) {
+        if (referralKeyPath == null || referralKeyPath.isBlank()) {
+            throw new ConfigException("Referral key path is required for the default config");
+        }
+        return DEFAULT_YAML_TEMPLATE.formatted(referralKeyPath, referralKeyPath);
     }
 }

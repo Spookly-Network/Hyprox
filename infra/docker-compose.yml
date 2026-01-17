@@ -2,6 +2,7 @@ version: "3.8"
 
 services:
   hyprox:
+    image: ${HYPROX_IMAGE:-hyprox:local}
     build:
       context: ..
       dockerfile: infra/Dockerfile
