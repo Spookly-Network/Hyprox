@@ -50,8 +50,9 @@ Handoff sequencing (full proxy)
 - Keep a short overlap window where A is still connected for rollback.
 
 Buffering
-- Queue outbound client packets while in Freeze/Prepare (bounded by size or packet count).
-- If buffer exceeds limit or timeout is hit, abort and roll back.
+- Queue outbound client packets while in Freeze/Prepare (bounded by per-session packet count).
+- Enforce a global packet cap across concurrent migrations.
+- If buffer caps are exceeded or timeout is hit, abort and roll back.
 
 Fallbacks
 - If B setup/auth fails: resume A and clear buffers.

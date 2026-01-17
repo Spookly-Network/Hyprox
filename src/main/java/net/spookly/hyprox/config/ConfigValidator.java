@@ -240,6 +240,8 @@ public final class ConfigValidator {
             if (migration.allowPools == null || migration.allowPools.isEmpty()) {
                 errors.add("migration.allowPools must be set when migration.enabled is true");
             }
+            requirePositive(errors, migration.bufferMaxPackets, "migration.bufferMaxPackets");
+            requirePositive(errors, migration.bufferGlobalMaxPackets, "migration.bufferGlobalMaxPackets");
             requirePositive(errors, migration.ticketMaxAgeSeconds, "migration.ticketMaxAgeSeconds");
             validateMigrationTicketSigning(migration, errors);
             HyproxConfig.RoutingConfig routing = config.routing;
