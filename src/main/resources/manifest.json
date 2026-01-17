@@ -3,6 +3,6 @@
   "Name": "Hyprox",
   "Version": "1.0.0",
   "Author": "Spookly",
-  "Description": "A proxy for Hytale servers",
-  "Main": "net.spookly.Hyprox.Hyprox"
+  "Description": "Hyprox agent stub (optional backend plugin)",
+  "Main": "net.spookly.hyprox.agent.HyproxAgentPlugin"
 }
