@@ -20,10 +20,13 @@ dependencies {
     implementation 'io.netty:netty-common:4.2.9.Final'
     implementation 'io.netty:netty-transport:4.2.9.Final'
     implementation 'io.netty:netty-codec-native-quic:4.2.9.Final'
+    runtimeOnly 'io.netty:netty-codec-native-quic:4.2.9.Final:linux-x86_64'
+    runtimeOnly 'io.netty:netty-codec-native-quic:4.2.9.Final:linux-aarch_64'
     implementation 'io.netty.incubator:netty-incubator-codec-native-quic:0.0.74.Final'
 
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'io.netty:netty-handler:4.2.9.Final'
     testImplementation(files "libs/HytaleServer.jar")
 
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'

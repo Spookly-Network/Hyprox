@@ -137,7 +137,7 @@ public final class BackendConnector {
             builder.trustManager(new File(quic.backendCa));
         }
         if (quic.cert != null && quic.key != null) {
-            builder.keyManager(new File(quic.cert), null, new File(quic.key));
+            builder.keyManager(new File(quic.key), null, new File(quic.cert));
         }
         List<String> alpn = quic.alpn;
         if (alpn != null && !alpn.isEmpty()) {
