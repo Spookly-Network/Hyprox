@@ -3,6 +3,7 @@
 Format
 - YAML (human-editable), with optional env expansion via `env:VAR_NAME`.
 - File expansion via `path:relative/or/absolute` (relative to the config file directory).
+- File path fields (certs, CAs) resolve relative to the config file directory when not absolute.
 
 Top-level keys
 - `proxy`: listener + QUIC + general mode.
@@ -163,10 +164,10 @@ proxy:
   quic:
     alpn: ["hytale/1"]
     cipherSuites: ["TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384"]
-    cert: config/certs/proxy.crt
-    key: config/certs/proxy.key
-    clientCa: config/certs/hytale-client-ca.crt
-    backendCa: config/certs/backend-ca.crt
+    cert: certs/proxy.crt
+    key: certs/proxy.key
+    clientCa: certs/hytale-client-ca.crt
+    backendCa: certs/backend-ca.crt
     requireClientCert: true
     backendSanAllowlist: ["backend-1.local", "backend-2.local"]
     maxBidirectionalStreams: 100
@@ -273,7 +274,7 @@ observability:
 agent:
   auth:
     mode: mtls
-    clientCa: config/certs/backend-ca.crt
+    clientCa: certs/backend-ca.crt
     sharedKey: env:HYPROX_AGENT_HMAC
   allowlist:
     - backendId: lobby-1
@@ -292,7 +293,7 @@ registry:
   allowPublicAddresses: false
   auth:
     mode: mtls
-    clientCa: config/certs/orchestrator-ca.crt
+    clientCa: certs/orchestrator-ca.crt
     sharedKey: env:HYPROX_REGISTRY_HMAC
     nonceBytes: 16
     clockSkewSeconds: 10
@@ -319,9 +320,9 @@ proxy:
   quic:
     alpn: ["hytale/1"]
     cipherSuites: ["TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384"]
-    cert: config/certs/proxy.crt
-    key: config/certs/proxy.key
-    clientCa: config/certs/hytale-client-ca.crt
+    cert: certs/proxy.crt
+    key: certs/proxy.key
+    clientCa: certs/hytale-client-ca.crt
     requireClientCert: true
   timeouts:
     handshakeMs: 8000
@@ -344,10 +345,10 @@ proxy:
   quic:
     alpn: ["hytale/1"]
     cipherSuites: ["TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384"]
-    cert: config/certs/proxy.crt
-    key: config/certs/proxy.key
-    clientCa: config/certs/hytale-client-ca.crt
-    backendCa: config/certs/backend-ca.crt
+    cert: certs/proxy.crt
+    key: certs/proxy.key
+    clientCa: certs/hytale-client-ca.crt
+    backendCa: certs/backend-ca.crt
     requireClientCert: true
     backendSanAllowlist: ["backend-1.local", "backend-2.local"]
   timeouts:

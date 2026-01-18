@@ -29,8 +29,10 @@ Notes:
 - On first run, the container generates a self-signed cert in `/config/certs` and a default `hyprox.yaml`, then exits.
 - If `HYPROX_REFERRAL_HMAC` is not set, the container generates one at `/config/secret/referral_hmac`
   (override with `HYPROX_REFERRAL_HMAC_FILE`) and exports it for Hyprox.
+- If running as root, the entrypoint will chown `/config` to UID/GID 10001 and then drop to the `hyprox` user.
+  Set `HYPROX_SKIP_CHOWN=1` to disable the chown step.
 - Adjust the published ports to match `proxy.listen.port` and any registry or metrics ports you enable.
-- The image runs as `hyprox` (UID/GID 10001). Ensure `/config` is writable or run with `--user`.
+- The proxy process runs as `hyprox` (UID/GID 10001). Ensure `/config` is writable if you disable chowning.
 
 Generate a referral signing secret:
 ```

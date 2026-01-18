@@ -114,7 +114,7 @@ public final class ProxyServer {
     private QuicSslContext buildSslContext(HyproxConfig.QuicConfig quic) {
         File certFile = new File(quic.cert);
         File keyFile = new File(quic.key);
-        QuicSslContextBuilder builder = QuicSslContextBuilder.forServer(certFile, null, keyFile);
+        QuicSslContextBuilder builder = QuicSslContextBuilder.forServer(keyFile, null, certFile);
         List<String> alpn = quic.alpn;
         if (alpn != null && !alpn.isEmpty()) {
             builder.applicationProtocols(alpn.toArray(new String[0]));

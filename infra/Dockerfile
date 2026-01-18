@@ -23,7 +23,7 @@ ARG HYPROX_UID=10001
 ARG HYPROX_GID=10001
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && apt-get install -y --no-install-recommends openssl ca-certificates gosu \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd -g "${HYPROX_GID}" hyprox \
     && useradd -u "${HYPROX_UID}" -g "${HYPROX_GID}" -d /app -s /usr/sbin/nologin hyprox \
@@ -34,8 +34,6 @@ COPY --from=build --chown=hyprox:hyprox /app/hyprox.jar /app/hyprox.jar
 COPY --from=build --chown=hyprox:hyprox /app/build/runtime /app/runtime
 COPY --chown=hyprox:hyprox infra/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
-
-USER hyprox
 
 EXPOSE 20000
 

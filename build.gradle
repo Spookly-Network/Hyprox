@@ -20,6 +20,7 @@ dependencies {
     implementation 'io.netty:netty-common:4.2.9.Final'
     implementation 'io.netty:netty-transport:4.2.9.Final'
     implementation 'io.netty:netty-codec-native-quic:4.2.9.Final'
+    implementation 'io.netty.incubator:netty-incubator-codec-native-quic:0.0.74.Final'
 
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'

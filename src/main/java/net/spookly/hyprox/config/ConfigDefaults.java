@@ -15,8 +15,8 @@ public final class ConfigDefaults {
               defaultPath: redirect
               quic:
                 alpn: ["hytale/1"]
-                cert: config/certs/proxy.crt
-                key: config/certs/proxy.key
+                cert: certs/proxy.crt
+                key: certs/proxy.key
                 maxBidirectionalStreams: 100
                 maxUnidirectionalStreams: 100
                 mtu: 1350

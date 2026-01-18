@@ -51,6 +51,7 @@ public final class ConfigLoader {
         } catch (IllegalArgumentException e) {
             throw new ConfigException("Failed to parse config: " + path, e);
         }
+        ConfigPathResolver.resolve(config, path.getParent());
         ConfigValidator.validate(config);
         return config;
     }

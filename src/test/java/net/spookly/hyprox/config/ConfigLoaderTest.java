@@ -46,5 +46,7 @@ class ConfigLoaderTest {
         HyproxConfig config = ConfigLoader.load(configPath);
 
         assertEquals("test-secret", config.auth.referral.signing.keys.get(0).key);
+        assertEquals(tempDir.resolve("certs").resolve("proxy.crt").toString(), config.proxy.quic.cert);
+        assertEquals(tempDir.resolve("certs").resolve("proxy.key").toString(), config.proxy.quic.key);
     }
 }
